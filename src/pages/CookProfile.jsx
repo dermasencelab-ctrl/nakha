@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { ArrowRight, MessageCircle, X, Flame } from 'lucide-react';
-import { generateWhatsAppLink } from '../utils/whatsapp';
+import { ArrowRight, ShoppingBag, X, Flame } from 'lucide-react';
 
 function CookProfile() {
   const { id } = useParams();
@@ -19,6 +18,9 @@ function CookProfile() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,16 +42,64 @@ function CookProfile() {
     fetchData();
   }, [id]);
 
-  const handleConfirmOrder = () => {
-    const link = generateWhatsAppLink(cook, selectedDish, {
-      type: orderType,
-      quantity,
-      date,
-      time,
-      notes,
-    });
-    window.open(link, '_blank');
-    navigate('/order-success');
+  // Validation: رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0
+  const validatePhone = (phone) => {
+    const phoneRegex = /^0[0-9]{9}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const resetOrderForm = () => {
+    setSelectedDish(null);
+    setOrderType('instant');
+    setQuantity(1);
+    setDate('');
+    setTime('');
+    setNotes('');
+    setCustomerName('');
+    setCustomerPhone('');
+  };
+
+  const handleConfirmOrder = async (e) => {
+    e.preventDefault();
+
+    // Validation
+    if (!customerName.trim() || customerName.trim().length < 3) {
+      alert('الرجاء إدخال اسم صحيح (3 أحرف على الأقل)');
+      return;
+    }
+
+    if (!validatePhone(customerPhone)) {
+      alert('رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0\nمثال: 0549741892');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const orderRef = await addDoc(collection(db, 'orders'), {
+        customerName: customerName.trim(),
+        customerPhone,
+        cookId: cook.id,
+        cookName: cook.name,
+        dishId: selectedDish.id,
+        dishName: selectedDish.name,
+        dishImage: selectedDish.image,
+        quantity: Number(quantity),
+        orderType,
+        scheduledDate: orderType === 'scheduled' ? date : null,
+        scheduledTime: orderType === 'scheduled' ? time : null,
+        notes,
+        totalPrice: (selectedDish.price || 0) * Number(quantity),
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      const phone = customerPhone;
+      resetOrderForm();
+      navigate(`/order-success?orderId=${orderRef.id}&phone=${phone}`);
+    } catch (err) {
+      alert('حدث خطأ، حاول مرة أخرى');
+      console.error(err);
+    }
+    setSubmitting(false);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
@@ -107,7 +157,7 @@ function CookProfile() {
                     onClick={() => setSelectedDish(dish)}
                     className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition flex items-center justify-center gap-2"
                   >
-                    <MessageCircle className="w-5 h-5" />
+                    <ShoppingBag className="w-5 h-5" />
                     اطلب الآن
                   </button>
                 </div>
@@ -124,89 +174,148 @@ function CookProfile() {
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-2xl font-bold text-dark">اطلب: {selectedDish.name}</h3>
-                <button onClick={() => setSelectedDish(null)} className="text-gray-500">
+                <button onClick={resetOrderForm} className="text-gray-500">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {/* نوع الطلب */}
-              <div className="mb-4">
-                <label className="block font-semibold mb-2">نوع الطلب:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setOrderType('instant')}
-                    className={`py-3 rounded-xl font-semibold ${
-                      orderType === 'instant' ? 'bg-primary text-white' : 'bg-gray-100'
-                    }`}
-                  >
-                    فوري
-                  </button>
-                  <button
-                    onClick={() => setOrderType('scheduled')}
-                    className={`py-3 rounded-xl font-semibold ${
-                      orderType === 'scheduled' ? 'bg-primary text-white' : 'bg-gray-100'
-                    }`}
-                  >
-                    مسبق
-                  </button>
-                </div>
-              </div>
-
-              {/* الكمية */}
-              <div className="mb-4">
-                <label className="block font-semibold mb-2">الكمية:</label>
+              <form onSubmit={handleConfirmOrder} className="space-y-3">
+                {/* اسم الزبون */}
                 <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                  required
+                  minLength="3"
+                  placeholder="اسمك الكامل"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
                 />
-              </div>
 
-              {/* التاريخ والوقت للطلب المسبق */}
-              {orderType === 'scheduled' && (
-                <>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">التاريخ:</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                    />
+                {/* رقم الهاتف مع validation */}
+                <div>
+                  <input
+                    required
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="0[0-9]{9}"
+                    maxLength="10"
+                    placeholder="رقم الهاتف (0549741892)"
+                    value={customerPhone}
+                    onChange={(e) => {
+                      // اقبل الأرقام فقط
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value.length <= 10) {
+                        setCustomerPhone(value);
+                      }
+                    }}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
+                  />
+                  {customerPhone && customerPhone.length > 0 && customerPhone.length < 10 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      باقي {10 - customerPhone.length} أرقام
+                    </p>
+                  )}
+                  {customerPhone && customerPhone.length === 10 && !validatePhone(customerPhone) && (
+                    <p className="text-xs text-red-600 mt-1">
+                      الرقم يجب أن يبدأ بـ 0
+                    </p>
+                  )}
+                </div>
+
+                {/* نوع الطلب */}
+                <div>
+                  <label className="block font-semibold mb-2">نوع الطلب:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('instant')}
+                      className={`py-3 rounded-xl font-semibold ${
+                        orderType === 'instant' ? 'bg-primary text-white' : 'bg-gray-100'
+                      }`}
+                    >
+                      فوري
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('scheduled')}
+                      className={`py-3 rounded-xl font-semibold ${
+                        orderType === 'scheduled' ? 'bg-primary text-white' : 'bg-gray-100'
+                      }`}
+                    >
+                      مسبق
+                    </button>
                   </div>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">الوقت:</label>
-                    <input
-                      type="time"
-                      value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                    />
+                </div>
+
+                {/* الكمية */}
+                <div>
+                  <label className="block font-semibold mb-2">الكمية:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
+                  />
+                </div>
+
+                {/* التاريخ والوقت للطلب المسبق */}
+                {orderType === 'scheduled' && (
+                  <>
+                    <div>
+                      <label className="block font-semibold mb-2">التاريخ:</label>
+                      <input
+                        type="date"
+                        required
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-2">الوقت:</label>
+                      <input
+                        type="time"
+                        required
+                        value={time}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* ملاحظات */}
+                <div>
+                  <label className="block font-semibold mb-2">ملاحظات (اختياري):</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows="2"
+                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
+                    placeholder="مثال: بدون فلفل حار..."
+                  />
+                </div>
+
+                {/* المجموع */}
+                {selectedDish.price && (
+                  <div className="bg-cream p-3 rounded-xl text-center">
+                    <span className="text-gray-600">المجموع: </span>
+                    <span className="text-2xl font-bold text-primary">
+                      {selectedDish.price * quantity} دج
+                    </span>
                   </div>
-                </>
-              )}
+                )}
 
-              {/* ملاحظات */}
-              <div className="mb-6">
-                <label className="block font-semibold mb-2">ملاحظات (اختياري):</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows="3"
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                  placeholder="مثال: بدون فلفل حار..."
-                />
-              </div>
-
-              <button
-                onClick={handleConfirmOrder}
-                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-6 h-6" />
-                تأكيد الطلب عبر واتساب
-              </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <ShoppingBag className="w-6 h-6" />
+                  {submitting ? 'جاري الإرسال...' : 'تأكيد الطلب'}
+                </button>
+              </form>
             </div>
           </div>
         </div>
