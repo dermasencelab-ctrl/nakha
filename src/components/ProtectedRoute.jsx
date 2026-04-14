@@ -1,22 +1,40 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-function ProtectedRoute({ children, requiredRole }) {
-  const { user, userRole, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { currentUser, userProfile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-orange-600 text-xl">جاري التحميل...</div>
+      </div>
+    );
   }
 
-  if (!user) {
-    return <Navigate to="/login" />;
+  // غير مسجّل دخول
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requiredRole && userRole !== requiredRole) {
-    return <Navigate to="/" />;
+  // لا يوجد ملف تعريف
+  if (!userProfile) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // التحقق من الدور
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userProfile.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // طباخة لكن لسة pending
+  if (userProfile.role === 'cook') {
+    // نحتاج جلب status من cooks (سنتعامل معها داخل CookDashboard لاحقاً)
+    // هنا فقط نسمح بالوصول، والتحقق من status يتم في الصفحة نفسها
   }
 
   return children;
-}
+};
 
 export default ProtectedRoute;

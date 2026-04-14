@@ -1,74 +1,233 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
-import { ChefHat } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-function CookSignup() {
-  const [form, setForm] = useState({
-    name: '', email: '', password: '', whatsapp: '',
-    description: '', cuisineType: '', image: '',
+const CookSignup = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    neighborhood: '',
+    bio: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { signupCook } = useAuth();
   const navigate = useNavigate();
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-      await setDoc(doc(db, 'cooks', cred.user.uid), {
-        name: form.name,
-        email: form.email,
-        whatsapp: form.whatsapp,
-        description: form.description,
-        cuisineType: form.cuisineType,
-        image: form.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400',
-        badges: [],
-        isActive: true,
-        isVerified: false, // ⏳ ينتظر التوثيق
-        isReadyToday: false,
-        createdAt: serverTimestamp(),
-      });
-      navigate('/cook/pending');
-    } catch (err) {
-      setError(err.code === 'auth/email-already-in-use' ? 'البريد مستخدم بالفعل' : 'حدث خطأ، حاولي مرة أخرى');
-    }
-    setLoading(false);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+  const validatePhone = (phone) => {
+    // رقم جزائري: 10 أرقام، يبدأ بـ 0
+    const phoneRegex = /^0[5-7][0-9]{8}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    // التحقق من البيانات
+    if (formData.password !== formData.confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+
+    if (!validatePhone(formData.phone)) {
+      setError('رقم الهاتف غير صحيح (10 أرقام، يبدأ بـ 05 أو 06 أو 07)');
+      return;
+    }
+
+    if (formData.name.trim().length < 2) {
+      setError('الاسم قصير جداً');
+      return;
+    }
+
+    if (formData.neighborhood.trim().length < 2) {
+      setError('يرجى إدخال الحي');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await signupCook(formData.email, formData.password, {
+        name: formData.name.trim(),
+        phone: formData.phone,
+        neighborhood: formData.neighborhood.trim(),
+        bio: formData.bio.trim(),
+      });
+
+      // التوجيه لصفحة الانتظار
+      navigate('/cook/pending');
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('هذا البريد الإلكتروني مسجّل مسبقاً');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('البريد الإلكتروني غير صحيح');
+      } else if (err.code === 'auth/weak-password') {
+        setError('كلمة المرور ضعيفة');
+      } else {
+        setError('حدث خطأ، حاول مرة أخرى');
+      }
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full my-8">
-        <div className="text-center mb-6">
-          <ChefHat className="w-16 h-16 text-primary mx-auto mb-3" />
-          <h1 className="text-3xl font-bold text-dark">سجّلي كطباخة</h1>
-          <p className="text-gray-600 mt-2">انضمي لمنصة نَكهة</p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 py-8 px-4" dir="rtl">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-orange-600 mb-2">انضمي لـ نَكهة 🍽️</h1>
+          <p className="text-gray-600">سجّلي كطباخة وابدئي بيع أكلك المنزلي في بشار</p>
         </div>
-        <form onSubmit={handleSignup} className="space-y-3">
-          <input required placeholder="الاسم الكامل" value={form.name} onChange={update('name')} className="w-full p-3 border-2 rounded-xl" />
-          <input type="email" required placeholder="البريد الإلكتروني" value={form.email} onChange={update('email')} className="w-full p-3 border-2 rounded-xl" />
-          <input type="password" required placeholder="كلمة السر (6 أحرف على الأقل)" value={form.password} onChange={update('password')} className="w-full p-3 border-2 rounded-xl" />
-          <input required placeholder="رقم واتساب (213XXXXXXXXX)" value={form.whatsapp} onChange={update('whatsapp')} className="w-full p-3 border-2 rounded-xl" />
-          <input required placeholder="نوع الأكل (تقليدي، حلويات...)" value={form.cuisineType} onChange={update('cuisineType')} className="w-full p-3 border-2 rounded-xl" />
-          <textarea required placeholder="وصف مختصر عنك" value={form.description} onChange={update('description')} rows="2" className="w-full p-3 border-2 rounded-xl" />
-          <input placeholder="رابط صورة شخصية (اختياري)" value={form.image} onChange={update('image')} className="w-full p-3 border-2 rounded-xl" />
-          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full bg-primary text-white py-3 rounded-xl font-bold disabled:opacity-50">
-            {loading ? 'جاري التسجيل...' : 'تسجيل'}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* الاسم الكامل */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">الاسم الكامل *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="فاطمة الزهراء"
+            />
+          </div>
+
+          {/* البريد الإلكتروني */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">البريد الإلكتروني *</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="example@email.com"
+              dir="ltr"
+            />
+          </div>
+
+          {/* رقم الهاتف */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">رقم الهاتف (واتساب) *</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              maxLength={10}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="0555123456"
+              dir="ltr"
+            />
+            <p className="text-xs text-gray-500 mt-1">10 أرقام، يبدأ بـ 05 أو 06 أو 07</p>
+          </div>
+
+          {/* الحي */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">الحي في بشار *</label>
+            <input
+              type="text"
+              name="neighborhood"
+              value={formData.neighborhood}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="مثلاً: حي الفرح"
+            />
+          </div>
+
+          {/* نبذة */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">نبذة عن أكلك (اختياري)</label>
+            <textarea
+              name="bio"
+              value={formData.bio}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              placeholder="مثلاً: متخصصة في الحلويات التقليدية والمعجنات..."
+            />
+          </div>
+
+          {/* كلمة المرور */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">كلمة المرور *</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              minLength={6}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="••••••••"
+              dir="ltr"
+            />
+          </div>
+
+          {/* تأكيد كلمة المرور */}
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">تأكيد كلمة المرور *</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              minLength={6}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              placeholder="••••••••"
+              dir="ltr"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition disabled:opacity-50 mt-6"
+          >
+            {loading ? 'جاري التسجيل...' : 'سجّلي الآن'}
           </button>
         </form>
-        <Link to="/login" className="block text-center text-primary mt-4 text-sm font-semibold">
-          لدي حساب بالفعل
-        </Link>
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>عندك حساب بالفعل؟</p>
+          <Link to="/login" className="text-orange-600 font-bold hover:underline">
+            سجّلي الدخول
+          </Link>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Link to="/" className="text-gray-500 text-sm hover:underline">
+            ← العودة للصفحة الرئيسية
+          </Link>
+        </div>
       </div>
     </div>
   );
-}
+};
 
 export default CookSignup;

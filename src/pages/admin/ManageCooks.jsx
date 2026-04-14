@@ -1,149 +1,298 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { ArrowRight, Plus, Edit, Trash2, X } from 'lucide-react';
 
-function ManageCooks() {
+const ManageCooks = () => {
   const [cooks, setCooks] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingCook, setEditingCook] = useState(null);
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    cuisineType: '',
-    image: '',
-    whatsapp: '',
-    badges: '',
-    isActive: true,
-    isReadyToday: false,
-  });
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('pending'); // pending | approved | rejected
+  const [actionLoading, setActionLoading] = useState(null);
 
+  // جلب كل الطباخات
   const fetchCooks = async () => {
-    const snapshot = await getDocs(collection(db, 'cooks'));
-    setCooks(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-  };
-
-  useEffect(() => { fetchCooks(); }, []);
-
-  const resetForm = () => {
-    setForm({
-      name: '', description: '', cuisineType: '', image: '',
-      whatsapp: '', badges: '', isActive: true, isReadyToday: false,
-    });
-    setEditingCook(null);
-    setShowForm(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const data = {
-      ...form,
-      badges: form.badges.split(',').map(b => b.trim()).filter(Boolean),
-    };
-    if (editingCook) {
-      await updateDoc(doc(db, 'cooks', editingCook.id), data);
-    } else {
-      await addDoc(collection(db, 'cooks'), data);
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'cooks'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const cooksData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCooks(cooksData);
+    } catch (error) {
+      console.error('Error fetching cooks:', error);
+    } finally {
+      setLoading(false);
     }
-    resetForm();
+  };
+
+  useEffect(() => {
     fetchCooks();
-  };
+  }, []);
 
-  const handleEdit = (cook) => {
-    setEditingCook(cook);
-    setForm({
-      name: cook.name || '',
-      description: cook.description || '',
-      cuisineType: cook.cuisineType || '',
-      image: cook.image || '',
-      whatsapp: cook.whatsapp || '',
-      badges: (cook.badges || []).join(', '),
-      isActive: cook.isActive !== false,
-      isReadyToday: cook.isReadyToday || false,
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('هل أنت متأكد من حذف هذه الطباخة؟')) {
-      await deleteDoc(doc(db, 'cooks', id));
-      fetchCooks();
+  // قبول طباخة
+  const handleApprove = async (cookId) => {
+    setActionLoading(cookId);
+    try {
+      await updateDoc(doc(db, 'cooks', cookId), {
+        status: 'approved',
+        approvedAt: serverTimestamp(),
+      });
+      await fetchCooks();
+    } catch (error) {
+      console.error('Error approving cook:', error);
+      alert('حدث خطأ أثناء القبول');
+    } finally {
+      setActionLoading(null);
     }
+  };
+
+  // رفض طباخة
+  const handleReject = async (cookId) => {
+    if (!confirm('هل أنت متأكد من رفض هذه الطباخة؟')) return;
+    setActionLoading(cookId);
+    try {
+      await updateDoc(doc(db, 'cooks', cookId), {
+        status: 'rejected',
+      });
+      await fetchCooks();
+    } catch (error) {
+      console.error('Error rejecting cook:', error);
+      alert('حدث خطأ أثناء الرفض');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // إعادة قبول طباخة مرفوضة
+  const handleReapprove = async (cookId) => {
+    setActionLoading(cookId);
+    try {
+      await updateDoc(doc(db, 'cooks', cookId), {
+        status: 'approved',
+        approvedAt: serverTimestamp(),
+      });
+      await fetchCooks();
+    } catch (error) {
+      console.error('Error reapproving cook:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // إيقاف طباخة معتمدة
+  const handleSuspend = async (cookId) => {
+    if (!confirm('هل تريد إيقاف هذه الطباخة؟')) return;
+    setActionLoading(cookId);
+    try {
+      await updateDoc(doc(db, 'cooks', cookId), {
+        status: 'pending',
+      });
+      await fetchCooks();
+    } catch (error) {
+      console.error('Error suspending cook:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // حذف طباخة نهائياً
+  const handleDelete = async (cookId) => {
+    if (!confirm('⚠️ سيتم حذف الطباخة نهائياً. هل أنت متأكد؟')) return;
+    setActionLoading(cookId);
+    try {
+      await deleteDoc(doc(db, 'cooks', cookId));
+      await deleteDoc(doc(db, 'users', cookId));
+      await fetchCooks();
+    } catch (error) {
+      console.error('Error deleting cook:', error);
+      alert('حدث خطأ أثناء الحذف');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // فلترة حسب التبويب
+  const filteredCooks = cooks.filter((cook) => cook.status === activeTab);
+
+  // عدّاد كل تبويب
+  const counts = {
+    pending: cooks.filter((c) => c.status === 'pending').length,
+    approved: cooks.filter((c) => c.status === 'approved').length,
+    rejected: cooks.filter((c) => c.status === 'rejected').length,
   };
 
   return (
-    <div className="min-h-screen bg-cream">
-      <header className="bg-dark text-white p-4">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <ArrowRight className="w-5 h-5" /> رجوع
+    <div className="min-h-screen bg-gray-50 py-8 px-4" dir="rtl">
+      <div className="max-w-6xl mx-auto">
+        {/* العنوان */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">إدارة الطباخات</h1>
+          <Link
+            to="/admin"
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+          >
+            ← لوحة التحكم
           </Link>
-          <h1 className="text-xl font-bold">إدارة الطباخات</h1>
         </div>
-      </header>
 
-      <div className="max-w-5xl mx-auto p-6">
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-primary text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 mb-6 hover:bg-orange-600"
-        >
-          <Plus className="w-5 h-5" /> إضافة طباخة
-        </button>
+        {/* التبويبات */}
+        <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${
+              activeTab === 'pending'
+                ? 'bg-orange-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            ⏳ معلّقات
+            {counts.pending > 0 && (
+              <span className="mr-2 bg-white text-orange-600 px-2 py-0.5 rounded-full text-sm">
+                {counts.pending}
+              </span>
+            )}
+          </button>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          {cooks.map(cook => (
-            <div key={cook.id} className="bg-white p-4 rounded-xl shadow flex gap-4">
-              <img src={cook.image} alt={cook.name} className="w-24 h-24 object-cover rounded-lg" />
-              <div className="flex-1">
-                <h3 className="font-bold text-lg">{cook.name}</h3>
-                <p className="text-sm text-gray-600">{cook.cuisineType}</p>
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => handleEdit(cook)} className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => handleDelete(cook.id)} className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          <button
+            onClick={() => setActiveTab('approved')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${
+              activeTab === 'approved'
+                ? 'bg-green-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            ✅ معتمدات ({counts.approved})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('rejected')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${
+              activeTab === 'rejected'
+                ? 'bg-red-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            ❌ مرفوضات ({counts.rejected})
+          </button>
+        </div>
+
+        {/* قائمة الطباخات */}
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">جاري التحميل...</div>
+        ) : filteredCooks.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <div className="text-5xl mb-4">📭</div>
+            <p className="text-gray-500">
+              {activeTab === 'pending' && 'لا توجد طلبات معلّقة حالياً'}
+              {activeTab === 'approved' && 'لا توجد طباخات معتمدات بعد'}
+              {activeTab === 'rejected' && 'لا توجد طباخات مرفوضات'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {filteredCooks.map((cook) => (
+              <div
+                key={cook.id}
+                className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* معلومات الطباخة */}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                      {cook.name}
+                    </h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p>
+                        📍 <span className="font-medium">الحي:</span> {cook.neighborhood}
+                      </p>
+                      <p>
+                        📱 <span className="font-medium">الهاتف:</span>{' '}
+                        <span dir="ltr">{cook.phone}</span>
+                      </p>
+                      {cook.bio && (
+                        <p className="mt-2 text-gray-700">
+                          <span className="font-medium">نبذة:</span> {cook.bio}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* الأزرار */}
+                  <div className="flex flex-col gap-2 md:w-48">
+                    {activeTab === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(cook.id)}
+                          disabled={actionLoading === cook.id}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50"
+                        >
+                          {actionLoading === cook.id ? '...' : '✅ قبول'}
+                        </button>
+                        <button
+                          onClick={() => handleReject(cook.id)}
+                          disabled={actionLoading === cook.id}
+                          className="bg-red-100 text-red-700 px-4 py-2 rounded-lg font-bold hover:bg-red-200 transition disabled:opacity-50"
+                        >
+                          ❌ رفض
+                        </button>
+                      </>
+                    )}
+
+                    {activeTab === 'approved' && (
+                      <>
+                        <Link
+                          to={`/cooks/${cook.id}`}
+                          className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition text-center"
+                        >
+                          👁️ عرض الملف
+                        </Link>
+                        <button
+                          onClick={() => handleSuspend(cook.id)}
+                          disabled={actionLoading === cook.id}
+                          className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg font-bold hover:bg-yellow-200 transition disabled:opacity-50"
+                        >
+                          ⏸️ إيقاف
+                        </button>
+                      </>
+                    )}
+
+                    {activeTab === 'rejected' && (
+                      <button
+                        onClick={() => handleReapprove(cook.id)}
+                        disabled={actionLoading === cook.id}
+                        className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-200 transition disabled:opacity-50"
+                      >
+                        ↩️ إعادة قبول
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleDelete(cook.id)}
+                      disabled={actionLoading === cook.id}
+                      className="text-red-600 text-sm hover:underline mt-1"
+                    >
+                      🗑️ حذف نهائي
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Modal النموذج */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-bold">{editingCook ? 'تعديل' : 'إضافة'} طباخة</h3>
-                <button onClick={resetForm}><X className="w-6 h-6" /></button>
-              </div>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <input required placeholder="الاسم" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
-                <textarea required placeholder="الوصف" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full p-3 border-2 rounded-xl" rows="2" />
-                <input required placeholder="نوع الأكل (تقليدي، حلويات...)" value={form.cuisineType} onChange={e => setForm({...form, cuisineType: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
-                <input required placeholder="رابط الصورة" value={form.image} onChange={e => setForm({...form, image: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
-                <input required placeholder="رقم واتساب (213XXXXXXXXX)" value={form.whatsapp} onChange={e => setForm({...form, whatsapp: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
-                <input placeholder="الشارات (موثوقة, الأكثر طلباً)" value={form.badges} onChange={e => setForm({...form, badges: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.isReadyToday} onChange={e => setForm({...form, isReadyToday: e.target.checked})} />
-                  متوفرة اليوم
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.isActive} onChange={e => setForm({...form, isActive: e.target.checked})} />
-                  مفعّلة
-                </label>
-                <button type="submit" className="w-full bg-primary text-white py-3 rounded-xl font-bold">حفظ</button>
-              </form>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default ManageCooks;

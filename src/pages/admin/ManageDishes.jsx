@@ -92,7 +92,7 @@ function ManageDishes() {
     <div className="min-h-screen bg-cream">
       <header className="bg-dark text-white p-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
+          <Link to="/admin/" className="flex items-center gap-2">
             <ArrowRight className="w-5 h-5" /> رجوع
           </Link>
           <h1 className="text-xl font-bold">إدارة الأطباق</h1>

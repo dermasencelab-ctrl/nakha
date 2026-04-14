@@ -30,17 +30,27 @@ function CookProfile() {
         setCook({ id: cookDoc.id, ...cookDoc.data() });
       }
 
-      // جلب أطباقها
+      // جلب أطباقها (المتوفرة فقط)
       const q = query(collection(db, 'dishes'), where('cookId', '==', id));
       const snapshot = await getDocs(q);
       const dishesData = snapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter(d => d.isActive !== false);
+        .filter(d => d.available !== false && d.isActive !== false);
       setDishes(dishesData);
       setLoading(false);
     };
     fetchData();
   }, [id]);
+
+  // دالة مساعدة للحصول على صورة الطبق (photo أو image)
+  const getDishImage = (dish) => {
+    return dish?.photo || dish?.image || '';
+  };
+
+  // دالة مساعدة لصورة الطباخة
+  const getCookImage = (cook) => {
+    return cook?.photo || cook?.image || '';
+  };
 
   // Validation: رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0
   const validatePhone = (phone) => {
@@ -75,23 +85,34 @@ function CookProfile() {
 
     setSubmitting(true);
     try {
-      const orderRef = await addDoc(collection(db, 'orders'), {
+      // بناء كائن الطلب مع تجنّب القيم undefined
+      const orderData = {
         customerName: customerName.trim(),
         customerPhone,
         cookId: cook.id,
-        cookName: cook.name,
+        cookName: cook.name || '',
         dishId: selectedDish.id,
-        dishName: selectedDish.name,
-        dishImage: selectedDish.image,
+        dishName: selectedDish.name || '',
+        dishImage: getDishImage(selectedDish),
         quantity: Number(quantity),
         orderType,
-        scheduledDate: orderType === 'scheduled' ? date : null,
-        scheduledTime: orderType === 'scheduled' ? time : null,
-        notes,
+        scheduledDate: orderType === 'scheduled' ? date : '',
+        scheduledTime: orderType === 'scheduled' ? time : '',
+        notes: notes || '',
         totalPrice: (selectedDish.price || 0) * Number(quantity),
+        price: selectedDish.price || 0,
         status: 'pending',
+        // إضافة items للتوافق مع CookOrders
+        items: [{
+          dishId: selectedDish.id,
+          name: selectedDish.name || '',
+          price: selectedDish.price || 0,
+          quantity: Number(quantity),
+        }],
         createdAt: serverTimestamp(),
-      });
+      };
+
+      const orderRef = await addDoc(collection(db, 'orders'), orderData);
       const phone = customerPhone;
       resetOrderForm();
       navigate(`/order-success?orderId=${orderRef.id}&phone=${phone}`);
@@ -109,13 +130,15 @@ function CookProfile() {
     <div className="min-h-screen bg-cream pb-20">
       {/* Header مع صورة الطباخة */}
       <div className="relative h-72 bg-gradient-to-b from-primary to-orange-700">
-        <img src={cook.image} alt={cook.name} className="w-full h-full object-cover opacity-60" />
+        {getCookImage(cook) && (
+          <img src={getCookImage(cook)} alt={cook.name} className="w-full h-full object-cover opacity-60" />
+        )}
         <Link to="/cooks" className="absolute top-4 right-4 bg-white/90 p-2 rounded-full">
           <ArrowRight className="w-5 h-5 text-dark" />
         </Link>
         <div className="absolute bottom-0 right-0 left-0 p-6 text-white">
           <h1 className="text-4xl font-bold mb-2">{cook.name}</h1>
-          <p className="text-white/90">{cook.description}</p>
+          <p className="text-white/90">{cook.bio || cook.description || ''}</p>
         </div>
       </div>
 
@@ -130,7 +153,18 @@ function CookProfile() {
             {dishes.map(dish => (
               <div key={dish.id} className="bg-white rounded-2xl overflow-hidden shadow-md">
                 <div className="relative">
-                  <img src={dish.image} alt={dish.name} className="w-full h-56 object-cover" />
+                  {getDishImage(dish) ? (
+                    <img
+                      src={getDishImage(dish)}
+                      alt={dish.name}
+                      className="w-full h-56 object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="w-full h-56 bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center text-6xl">
+                      🍽️
+                    </div>
+                  )}
                   {dish.isReadyToday && (
                     <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
                       <Flame className="w-4 h-4" />
@@ -201,7 +235,6 @@ function CookProfile() {
                     placeholder="رقم الهاتف (0549741892)"
                     value={customerPhone}
                     onChange={(e) => {
-                      // اقبل الأرقام فقط
                       const value = e.target.value.replace(/[^0-9]/g, '');
                       if (value.length <= 10) {
                         setCustomerPhone(value);
