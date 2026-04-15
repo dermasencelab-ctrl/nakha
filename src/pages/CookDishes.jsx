@@ -13,6 +13,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import ImageUploader from '../components/ImageUploader';
 
 const CookDishes = () => {
   const { userProfile } = useAuth();
@@ -350,18 +351,12 @@ const CookDishes = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-gray-700 mb-2 font-medium">رابط الصورة</label>
-                    <input
-                      type="url"
-                      value={formData.photo}
-                      onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                      placeholder="https://..."
-                      dir="ltr"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">اختياري - يمكنك إضافتها لاحقاً</p>
-                  </div>
+                  <ImageUploader
+  value={formData.photo}
+  onChange={(url) => setFormData({ ...formData, photo: url })}
+  folder="dishes"
+  label="صورة الطبق"
+/>
 
                   <div className="flex items-center gap-3">
                     <input

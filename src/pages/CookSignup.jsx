@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ImageUploader from '../components/ImageUploader';
 
 const CookSignup = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ const CookSignup = () => {
     phone: '',
     neighborhood: '',
     bio: '',
+    photo: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,6 +67,7 @@ const CookSignup = () => {
         phone: formData.phone,
         neighborhood: formData.neighborhood.trim(),
         bio: formData.bio.trim(),
+        photo: formData.photo,
       });
 
       // التوجيه لصفحة الانتظار
@@ -171,6 +174,14 @@ const CookSignup = () => {
               placeholder="مثلاً: متخصصة في الحلويات التقليدية والمعجنات..."
             />
           </div>
+
+          {/* صورة شخصية */}
+          <ImageUploader
+            value={formData.photo}
+            onChange={(url) => setFormData({ ...formData, photo: url })}
+            folder="cooks"
+            label="صورتك الشخصية (اختياري)"
+          />
 
           {/* كلمة المرور */}
           <div>

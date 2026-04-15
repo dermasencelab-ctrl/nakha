@@ -9,6 +9,7 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -19,7 +20,6 @@ const CookOrders = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [actionLoading, setActionLoading] = useState(null);
 
-  // تبويبات الحالات
   const tabs = [
     { value: 'pending', label: '🔔 جديدة', color: 'orange' },
     { value: 'preparing', label: '👩‍🍳 قيد التحضير', color: 'blue' },
@@ -28,7 +28,6 @@ const CookOrders = () => {
     { value: 'cancelled', label: '❌ ملغاة', color: 'red' },
   ];
 
-  // جلب الطلبات
   const fetchOrders = async () => {
     if (!userProfile?.cookId) return;
     setLoading(true);
@@ -40,7 +39,6 @@ const CookOrders = () => {
       const snapshot = await getDocs(q);
       const ordersData = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      // ترتيب حسب الأحدث
       ordersData.sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
@@ -59,7 +57,6 @@ const CookOrders = () => {
     fetchOrders();
   }, [userProfile]);
 
-  // تغيير حالة الطلب
   const updateOrderStatus = async (orderId, newStatus) => {
     setActionLoading(orderId);
     try {
@@ -67,6 +64,13 @@ const CookOrders = () => {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
+
+      if (newStatus === 'completed' && userProfile?.cookId) {
+        await updateDoc(doc(db, 'cooks', userProfile.cookId), {
+          totalOrders: increment(1),
+        });
+      }
+
       await fetchOrders();
     } catch (error) {
       console.error('Error updating order:', error);
@@ -76,7 +80,6 @@ const CookOrders = () => {
     }
   };
 
-  // تنسيق التاريخ
   const formatDate = (timestamp) => {
     if (!timestamp?.seconds) return '-';
     const date = new Date(timestamp.seconds * 1000);
@@ -89,16 +92,15 @@ const CookOrders = () => {
     });
   };
 
-  // حساب المجموع
-  const calculateTotal = (items) => {
-    if (!items || !Array.isArray(items)) return 0;
-    return items.reduce((sum, item) => sum + (item.price * item.quantity || 0), 0);
+  const calculateTotal = (order) => {
+    if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+      return order.items.reduce((sum, item) => sum + (item.price * item.quantity || 0), 0);
+    }
+    return order.totalPrice || 0;
   };
 
-  // فلترة الطلبات حسب التبويب
   const filteredOrders = orders.filter((order) => order.status === activeTab);
 
-  // عدّاد كل حالة
   const counts = tabs.reduce((acc, tab) => {
     acc[tab.value] = orders.filter((o) => o.status === tab.value).length;
     return acc;
@@ -107,7 +109,6 @@ const CookOrders = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 py-8 px-4" dir="rtl">
       <div className="max-w-5xl mx-auto">
-        {/* الترويسة */}
         <div className="mb-6">
           <Link
             to="/cook/dashboard"
@@ -118,16 +119,13 @@ const CookOrders = () => {
           <h1 className="text-3xl font-bold text-gray-800">الطلبات الواردة 📋</h1>
         </div>
 
-        {/* التبويبات */}
         <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={`flex-shrink-0 py-3 px-4 rounded-lg font-bold transition whitespace-nowrap ${
-                activeTab === tab.value
-                  ? `bg-${tab.color}-600 text-white`
-                  : 'text-gray-600 hover:bg-gray-100'
+                activeTab === tab.value ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
               style={
                 activeTab === tab.value
@@ -138,7 +136,6 @@ const CookOrders = () => {
                         tab.color === 'green' ? '#16a34a' :
                         tab.color === 'gray' ? '#4b5563' :
                         '#dc2626',
-                      color: 'white',
                     }
                   : {}
               }
@@ -155,7 +152,6 @@ const CookOrders = () => {
           ))}
         </div>
 
-        {/* قائمة الطلبات */}
         {loading ? (
           <div className="text-center py-12 text-gray-500">جاري التحميل...</div>
         ) : filteredOrders.length === 0 ? (
@@ -176,7 +172,6 @@ const CookOrders = () => {
                 key={order.id}
                 className="bg-white rounded-2xl shadow-md p-6 border border-gray-100"
               >
-                {/* ترويسة الطلب */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 pb-4 border-b border-gray-100">
                   <div>
                     <p className="text-xs text-gray-500">رقم الطلب</p>
@@ -189,7 +184,6 @@ const CookOrders = () => {
                   </div>
                 </div>
 
-                {/* معلومات الزبون */}
                 <div className="bg-orange-50 rounded-lg p-4 mb-4">
                   <h4 className="font-bold text-gray-700 mb-2">👤 معلومات الزبون</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -207,10 +201,20 @@ const CookOrders = () => {
                         {order.customerPhone || '-'}
                       </a>
                     </div>
-                    {order.customerAddress && (
-                      <div className="md:col-span-2">
-                        <span className="text-gray-500">العنوان:</span>{' '}
-                        <span className="font-medium">{order.customerAddress}</span>
+                    {order.orderType && (
+                      <div>
+                        <span className="text-gray-500">نوع الطلب:</span>{' '}
+                        <span className="font-medium">
+                          {order.orderType === 'instant' ? '⚡ فوري' : '📅 مسبق'}
+                        </span>
+                      </div>
+                    )}
+                    {order.orderType === 'scheduled' && order.scheduledDate && (
+                      <div>
+                        <span className="text-gray-500">الموعد:</span>{' '}
+                        <span className="font-medium">
+                          {order.scheduledDate} {order.scheduledTime}
+                        </span>
                       </div>
                     )}
                     {order.notes && (
@@ -222,34 +226,44 @@ const CookOrders = () => {
                   </div>
                 </div>
 
-                {/* الأطباق المطلوبة */}
                 <div className="mb-4">
                   <h4 className="font-bold text-gray-700 mb-2">🍽️ الأطباق المطلوبة</h4>
                   <div className="space-y-2">
-                    {order.items?.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2"
-                      >
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2"
+                        >
+                          <div>
+                            <span className="font-medium">{item.name}</span>
+                            <span className="text-gray-500 text-sm mr-2">× {item.quantity}</span>
+                          </div>
+                          <span className="font-bold text-orange-600">
+                            {item.price * item.quantity} دج
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2">
                         <div>
-                          <span className="font-medium">{item.name}</span>
-                          <span className="text-gray-500 text-sm mr-2">× {item.quantity}</span>
+                          <span className="font-medium">{order.dishName || 'طبق'}</span>
+                          <span className="text-gray-500 text-sm mr-2">× {order.quantity || 1}</span>
                         </div>
                         <span className="font-bold text-orange-600">
-                          {item.price * item.quantity} دج
+                          {order.totalPrice || 0} دج
                         </span>
                       </div>
-                    ))}
+                    )}
                   </div>
                   <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
                     <span className="font-bold text-gray-700">المجموع:</span>
                     <span className="text-xl font-bold text-orange-600">
-                      {calculateTotal(order.items)} دج
+                      {calculateTotal(order)} دج
                     </span>
                   </div>
                 </div>
 
-                {/* أزرار الإجراءات */}
                 <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
                   {order.status === 'pending' && (
                     <>

@@ -20,6 +20,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageCooks from './pages/admin/ManageCooks';
 import ManageDishes from './pages/admin/ManageDishes';
 import CookOrders from './pages/CookOrders';
+import RateOrder from './pages/RateOrder';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/cooks/:id" element={<CookProfile />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />
+<Route path="/rate/:orderId" element={<RateOrder />} />
 
         {/* صفحات المصادقة */}
         <Route path="/login" element={<Login />} />
