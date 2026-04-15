@@ -7,11 +7,14 @@ import {
   where,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
+  addDoc,
   serverTimestamp,
   increment,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { COMMISSION_RATE, FOUNDING_MEMBERS } from '../config/settings';
 
 const CookOrders = () => {
   const { userProfile } = useAuth();
@@ -60,15 +63,75 @@ const CookOrders = () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     setActionLoading(orderId);
     try {
+      const order = orders.find((o) => o.id === orderId);
+      if (!order) throw new Error('الطلب غير موجود');
+
+      // تحديث حالة الطلب
       await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus,
         updatedAt: serverTimestamp(),
       });
 
+      // إذا الطلب اكتمل: نحسب العمولة (أو نعفي إذا مؤسسة)
       if (newStatus === 'completed' && userProfile?.cookId) {
-        await updateDoc(doc(db, 'cooks', userProfile.cookId), {
-          totalOrders: increment(1),
-        });
+        const totalPrice = order.totalPrice || 0;
+
+        const cookRef = doc(db, 'cooks', userProfile.cookId);
+        const cookSnap = await getDoc(cookRef);
+        const cookData = cookSnap.data();
+
+        const balanceBefore = cookData?.balance || 0;
+        const freeOrdersRemaining = cookData?.freeOrdersRemaining || 0;
+        const isFoundingMember = cookData?.isFoundingMember || false;
+
+        // التحقق من الإعفاء (عضو مؤسسة + لسه عندها طلبات مجانية + الطلب صغير)
+        const isEligibleForFreeOrder =
+          isFoundingMember &&
+          freeOrdersRemaining > 0 &&
+          totalPrice <= FOUNDING_MEMBERS.maxFreeOrderAmount;
+
+        if (isEligibleForFreeOrder) {
+          // 🎁 طلب مجاني - بدون عمولة
+          await updateDoc(cookRef, {
+            freeOrdersRemaining: increment(-1),
+            freeOrdersUsed: increment(1),
+            totalOrders: increment(1),
+          });
+
+          await addDoc(collection(db, 'transactions'), {
+            cookId: userProfile.cookId,
+            type: 'free_order',
+            amount: 0,
+            orderId,
+            orderTotal: totalPrice,
+            description: `🎁 طلب مجاني #${orderId.slice(0, 8).toUpperCase()} (متبقي: ${freeOrdersRemaining - 1} طلبات مجانية)`,
+            balanceBefore,
+            balanceAfter: balanceBefore,
+            createdAt: serverTimestamp(),
+          });
+        } else {
+          // 💰 عمولة عادية 9%
+          const commission = Math.round(totalPrice * COMMISSION_RATE);
+          const balanceAfter = balanceBefore - commission;
+
+          await updateDoc(cookRef, {
+            balance: balanceAfter,
+            totalCommission: increment(commission),
+            totalOrders: increment(1),
+          });
+
+          await addDoc(collection(db, 'transactions'), {
+            cookId: userProfile.cookId,
+            type: 'commission',
+            amount: commission,
+            orderId,
+            orderTotal: totalPrice,
+            description: `عمولة طلب #${orderId.slice(0, 8).toUpperCase()}`,
+            balanceBefore,
+            balanceAfter,
+            createdAt: serverTimestamp(),
+          });
+        }
       }
 
       await fetchOrders();

@@ -18,7 +18,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null); // { role, cookId, ... }
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // جلب بيانات المستخدم من Firestore
@@ -50,8 +50,8 @@ export const AuthProvider = ({ children }) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
 
-    // 2. إنشاء وثيقة في cooks (status: pending)
-    const cookRef = doc(db, 'cooks', user.uid); // نستخدم uid كـ cookId للبساطة
+    // 2. إنشاء وثيقة في cooks (status: pending) مع كل حقول الرصيد
+    const cookRef = doc(db, 'cooks', user.uid);
     await setDoc(cookRef, {
       userId: user.uid,
       name: cookData.name,
@@ -61,6 +61,19 @@ export const AuthProvider = ({ children }) => {
       photo: cookData.photo || '',
       status: 'pending',
       rating: 0,
+      // 💰 إعدادات الرصيد والعمولة
+      balance: 0,
+      totalCommission: 0,
+      totalOrders: 0,
+      // ⭐ إعدادات التقييم
+      totalRatings: 0,
+      averageRating: 0,
+      ratingSum: 0,
+      // 🎁 عضو مؤسس (يُحدّد عند القبول)
+      isFoundingMember: false,
+      foundingMemberNumber: null,
+      freeOrdersRemaining: 0,
+      freeOrdersUsed: 0,
       createdAt: serverTimestamp(),
     });
 

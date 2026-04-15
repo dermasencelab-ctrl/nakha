@@ -6,16 +6,19 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  addDoc,
   serverTimestamp,
   query,
   orderBy,
+  where,
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import { FOUNDING_MEMBERS } from '../../config/settings';
 
 const ManageCooks = () => {
   const [cooks, setCooks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending'); // pending | approved | rejected
+  const [activeTab, setActiveTab] = useState('pending');
   const [actionLoading, setActionLoading] = useState(null);
 
   // جلب كل الطباخات
@@ -40,14 +43,64 @@ const ManageCooks = () => {
     fetchCooks();
   }, []);
 
-  // قبول طباخة
+  // قبول طباخة + إعطاء هدية المؤسسين إذا كانت ضمن أول 15
   const handleApprove = async (cookId) => {
     setActionLoading(cookId);
     try {
+      let foundingData = {};
+
+      if (FOUNDING_MEMBERS.enabled) {
+        // عدّ المؤسسين الحاليين
+        const foundingQuery = query(
+          collection(db, 'cooks'),
+          where('isFoundingMember', '==', true)
+        );
+        const foundingSnap = await getDocs(foundingQuery);
+        const foundingCount = foundingSnap.size;
+
+        // إذا لسه فيه مكان للمؤسسين
+        if (foundingCount < FOUNDING_MEMBERS.maxCount) {
+          foundingData = {
+            isFoundingMember: true,
+            foundingMemberNumber: foundingCount + 1,
+            balance: FOUNDING_MEMBERS.welcomeBalance,
+            freeOrdersRemaining: FOUNDING_MEMBERS.freeOrders,
+            freeOrdersUsed: 0,
+            joinedAsFoundingAt: serverTimestamp(),
+          };
+        }
+      }
+
+      // تحديث الطباخة
       await updateDoc(doc(db, 'cooks', cookId), {
         status: 'approved',
         approvedAt: serverTimestamp(),
+        ...foundingData,
       });
+
+      // إذا حصلت على هدية: نسجّل المعاملة
+      if (foundingData.isFoundingMember) {
+        await addDoc(collection(db, 'transactions'), {
+          cookId,
+          type: 'welcome_bonus',
+          amount: FOUNDING_MEMBERS.welcomeBalance,
+          description: `🎁 هدية ترحيبية - عضو مؤسسة #${foundingData.foundingMemberNumber}`,
+          balanceBefore: 0,
+          balanceAfter: FOUNDING_MEMBERS.welcomeBalance,
+          createdAt: serverTimestamp(),
+        });
+
+        alert(
+          `✅ تم قبول الطباخة كعضو مؤسسة #${foundingData.foundingMemberNumber}!\n\n` +
+          `حصلت على:\n` +
+          `💰 ${FOUNDING_MEMBERS.welcomeBalance} دج رصيد\n` +
+          `🆓 ${FOUNDING_MEMBERS.freeOrders} طلبات بدون عمولة\n` +
+          `⭐ شارة عضو مؤسسة دائمة`
+        );
+      } else {
+        alert('✅ تم قبول الطباخة بنجاح');
+      }
+
       await fetchCooks();
     } catch (error) {
       console.error('Error approving cook:', error);
@@ -122,6 +175,10 @@ const ManageCooks = () => {
     }
   };
 
+  // عدّ المؤسسين الحاليين
+  const foundingCount = cooks.filter((c) => c.isFoundingMember).length;
+  const foundingSpotsLeft = FOUNDING_MEMBERS.maxCount - foundingCount;
+
   // فلترة حسب التبويب
   const filteredCooks = cooks.filter((cook) => cook.status === activeTab);
 
@@ -145,6 +202,29 @@ const ManageCooks = () => {
             ← لوحة التحكم
           </Link>
         </div>
+
+        {/* بانر عدّاد المؤسسين */}
+        {FOUNDING_MEMBERS.enabled && (
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl p-4 mb-6 shadow-md">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">🎁</div>
+                <div>
+                  <p className="font-bold text-lg">عرض المؤسسين</p>
+                  <p className="text-sm text-white/90">
+                    {foundingCount} / {FOUNDING_MEMBERS.maxCount} طباخة انضمت
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white/20 backdrop-blur px-4 py-2 rounded-lg">
+                <p className="text-xs">المتبقي</p>
+                <p className="font-bold text-2xl">
+                  {foundingSpotsLeft > 0 ? `${foundingSpotsLeft} مكان` : 'انتهى العرض'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* التبويبات */}
         <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2">
@@ -204,14 +284,23 @@ const ManageCooks = () => {
             {filteredCooks.map((cook) => (
               <div
                 key={cook.id}
-                className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
+                className={`bg-white rounded-xl shadow-sm p-6 border ${
+                  cook.isFoundingMember ? 'border-yellow-300 border-2' : 'border-gray-100'
+                }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* معلومات الطباخة */}
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      {cook.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <h3 className="text-xl font-bold text-gray-800">
+                        {cook.name}
+                      </h3>
+                      {cook.isFoundingMember && (
+                        <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                          ⭐ عضو مؤسسة #{cook.foundingMemberNumber}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-600 space-y-1">
                       <p>
                         📍 <span className="font-medium">الحي:</span> {cook.neighborhood}
@@ -224,6 +313,28 @@ const ManageCooks = () => {
                         <p className="mt-2 text-gray-700">
                           <span className="font-medium">نبذة:</span> {cook.bio}
                         </p>
+                      )}
+
+                      {/* معلومات إضافية للمعتمدات */}
+                      {activeTab === 'approved' && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100">
+                          <div className="bg-green-50 px-3 py-2 rounded-lg">
+                            <p className="text-xs text-gray-500">الرصيد</p>
+                            <p className="font-bold text-green-700">{cook.balance || 0} دج</p>
+                          </div>
+                          <div className="bg-blue-50 px-3 py-2 rounded-lg">
+                            <p className="text-xs text-gray-500">الطلبات المكتملة</p>
+                            <p className="font-bold text-blue-700">{cook.totalOrders || 0}</p>
+                          </div>
+                          {cook.isFoundingMember && (
+                            <div className="bg-yellow-50 px-3 py-2 rounded-lg">
+                              <p className="text-xs text-gray-500">طلبات مجانية</p>
+                              <p className="font-bold text-yellow-700">
+                                {cook.freeOrdersRemaining || 0} متبقية
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>

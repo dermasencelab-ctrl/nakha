@@ -21,6 +21,9 @@ import ManageCooks from './pages/admin/ManageCooks';
 import ManageDishes from './pages/admin/ManageDishes';
 import CookOrders from './pages/CookOrders';
 import RateOrder from './pages/RateOrder';
+import CookWallet from './pages/CookWallet';
+import CookTopup from './pages/CookTopup';
+import ManageTopups from './pages/admin/ManageTopups';
 
 function App() {
   return (
@@ -62,6 +65,22 @@ function App() {
     </ProtectedRoute>
   }
 />
+<Route
+  path="/cook/wallet"
+  element={
+    <ProtectedRoute allowedRoles={['cook']}>
+      <CookWallet />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/cook/topup"
+  element={
+    <ProtectedRoute allowedRoles={['cook']}>
+      <CookTopup />
+    </ProtectedRoute>
+  }
+/>
 {/* صفحات الأدمن المحمية */}
         <Route
           path="/admin"
@@ -87,6 +106,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+<Route
+  path="/admin/topups"
+  element={
+    <ProtectedRoute allowedRoles={['admin']}>
+      <ManageTopups />
+    </ProtectedRoute>
+  }
+/>
 
         {/* صفحة 404 */}
         <Route

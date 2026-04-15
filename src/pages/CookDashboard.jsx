@@ -94,7 +94,28 @@ const CookDashboard = () => {
             </button>
           </div>
         </div>
-
+{/* بطاقة الرصيد */}
+        <Link
+          to="/cook/wallet"
+          className="block bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-md p-6 mb-6 hover:shadow-xl transition"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-white/80 text-sm mb-1">الرصيد الحالي 💰</p>
+              <p className="text-3xl font-bold">
+                {(cookData?.balance || 0).toLocaleString('ar-DZ')} دج
+              </p>
+              {cookData?.isFoundingMember && cookData?.freeOrdersRemaining > 0 && (
+                <p className="text-sm text-white/90 mt-2">
+                  🎁 طلبات مجانية متبقية: <span className="font-bold">{cookData.freeOrdersRemaining}</span>
+                </p>
+              )}
+            </div>
+            <div className="bg-white/20 backdrop-blur px-4 py-2 rounded-lg text-center">
+              <p className="text-sm">عرض المحفظة ←</p>
+            </div>
+          </div>
+        </Link>
         {/* الإحصائيات */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-2xl shadow-md p-6 border-r-4 border-orange-500">
@@ -117,7 +138,7 @@ const CookDashboard = () => {
         </div>
 
         {/* الإجراءات السريعة */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Link
             to="/cook/dishes"
             className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition group"
@@ -144,6 +165,21 @@ const CookDashboard = () => {
                   الطلبات الواردة
                 </h3>
                 <p className="text-gray-600 text-sm">مراجعة وإدارة طلبات الزبائن</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/cook/wallet"
+            className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-5xl">💰</div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600">
+                  محفظتي
+                </h3>
+                <p className="text-gray-600 text-sm">الرصيد، الشحن، والمعاملات</p>
               </div>
             </div>
           </Link>
