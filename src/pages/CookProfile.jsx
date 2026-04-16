@@ -1,36 +1,26 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useParams, Link } from 'react-router-dom';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { ArrowRight, ShoppingBag, X, Flame } from 'lucide-react';
+import { ArrowRight, Plus, Check, Flame, ShoppingCart, Star, Package } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
 
 function CookProfile() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [cook, setCook] = useState(null);
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDish, setSelectedDish] = useState(null);
+  const [addedDishId, setAddedDishId] = useState(null);
 
-  // Order form state
-  const [orderType, setOrderType] = useState('instant');
-  const [quantity, setQuantity] = useState(1);
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [notes, setNotes] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const { addToCart, cart } = useCart();
 
   useEffect(() => {
     const fetchData = async () => {
-      // جلب الطباخة
       const cookDoc = await getDoc(doc(db, 'cooks', id));
       if (cookDoc.exists()) {
         setCook({ id: cookDoc.id, ...cookDoc.data() });
       }
 
-      // جلب أطباقها (المتوفرة فقط)
       const q = query(collection(db, 'dishes'), where('cookId', '==', id));
       const snapshot = await getDocs(q);
       const dishesData = snapshot.docs
@@ -42,103 +32,71 @@ function CookProfile() {
     fetchData();
   }, [id]);
 
-  // دالة مساعدة للحصول على صورة الطبق (photo أو image)
-  const getDishImage = (dish) => {
-    return dish?.photo || dish?.image || '';
+  const getDishImage = (dish) => dish?.photo || dish?.image || '';
+  const getCookImage = (cook) => cook?.photo || cook?.image || '';
+
+  // تحقق إذا الطبق موجود في السلة
+  const getCartQuantity = (dishId) => {
+    const item = cart.find(i => i.dishId === dishId);
+    return item ? item.quantity : 0;
   };
 
-  // دالة مساعدة لصورة الطباخة
-  const getCookImage = (cook) => {
-    return cook?.photo || cook?.image || '';
+  // إضافة للسلة مع تأثير بصري
+  const handleAddToCart = (dish) => {
+    addToCart(dish, cook);
+    setAddedDishId(dish.id);
+    setTimeout(() => setAddedDishId(null), 1500);
   };
 
-  // Validation: رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0
-  const validatePhone = (phone) => {
-    const phoneRegex = /^0[0-9]{9}$/;
-    return phoneRegex.test(phone);
-  };
-
-  const resetOrderForm = () => {
-    setSelectedDish(null);
-    setOrderType('instant');
-    setQuantity(1);
-    setDate('');
-    setTime('');
-    setNotes('');
-    setCustomerName('');
-    setCustomerPhone('');
-  };
-
-  const handleConfirmOrder = async (e) => {
-    e.preventDefault();
-
-    // Validation
-    if (!customerName.trim() || customerName.trim().length < 3) {
-      alert('الرجاء إدخال اسم صحيح (3 أحرف على الأقل)');
-      return;
-    }
-
-    if (!validatePhone(customerPhone)) {
-      alert('رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0\nمثال: 0549741892');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      // بناء كائن الطلب مع تجنّب القيم undefined
-      const orderData = {
-        customerName: customerName.trim(),
-        customerPhone,
-        cookId: cook.id,
-        cookName: cook.name || '',
-        dishId: selectedDish.id,
-        dishName: selectedDish.name || '',
-        dishImage: getDishImage(selectedDish),
-        quantity: Number(quantity),
-        orderType,
-        scheduledDate: orderType === 'scheduled' ? date : '',
-        scheduledTime: orderType === 'scheduled' ? time : '',
-        notes: notes || '',
-        totalPrice: (selectedDish.price || 0) * Number(quantity),
-        price: selectedDish.price || 0,
-        status: 'pending',
-        // إضافة items للتوافق مع CookOrders
-        items: [{
-          dishId: selectedDish.id,
-          name: selectedDish.name || '',
-          price: selectedDish.price || 0,
-          quantity: Number(quantity),
-        }],
-        createdAt: serverTimestamp(),
-      };
-
-      const orderRef = await addDoc(collection(db, 'orders'), orderData);
-      const phone = customerPhone;
-      resetOrderForm();
-      navigate(`/order-success?orderId=${orderRef.id}&phone=${phone}`);
-    } catch (err) {
-      alert('حدث خطأ، حاول مرة أخرى');
-      console.error(err);
-    }
-    setSubmitting(false);
-  };
+  // عدد العناصر من هذي الطباخة في السلة
+  const cookCartItems = cart.filter(item => item.cookId === id);
+  const cookCartTotal = cookCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
   if (!cook) return <div className="min-h-screen flex items-center justify-center">الطباخة غير موجودة</div>;
 
   return (
-    <div className="min-h-screen bg-cream pb-20">
+    <div className="min-h-screen bg-cream pb-28">
       {/* Header مع صورة الطباخة */}
       <div className="relative h-72 bg-gradient-to-b from-primary to-orange-700">
-        {getCookImage(cook) && (
+        {getCookImage(cook) ? (
           <img src={getCookImage(cook)} alt={cook.name} className="w-full h-full object-cover opacity-60" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-b from-primary to-orange-700" />
         )}
         <Link to="/cooks" className="absolute top-4 right-4 bg-white/90 p-2 rounded-full">
           <ArrowRight className="w-5 h-5 text-dark" />
         </Link>
         <div className="absolute bottom-0 right-0 left-0 p-6 text-white">
-          <h1 className="text-4xl font-bold mb-2">{cook.name}</h1>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <h1 className="text-4xl font-bold">{cook.name}</h1>
+            {cook.isFoundingMember && (
+              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                ⭐ عضو مؤسسة #{cook.foundingMemberNumber}
+              </span>
+            )}
+          </div>
+          {cook.neighborhood && (
+            <p className="text-white/80 text-sm mb-1">📍 {cook.neighborhood}</p>
+          )}
           <p className="text-white/90">{cook.bio || cook.description || ''}</p>
+
+          {/* التقييم والإحصائيات */}
+          <div className="flex items-center gap-4 mt-3 flex-wrap">
+            {cook.totalRatings > 0 && (
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur px-3 py-1 rounded-full">
+                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <span className="font-bold">{cook.averageRating?.toFixed(1)}</span>
+                <span className="text-xs text-white/80">({cook.totalRatings})</span>
+              </div>
+            )}
+            {cook.totalOrders > 0 && (
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur px-3 py-1 rounded-full">
+                <Package className="w-4 h-4" />
+                <span className="text-sm">+{cook.totalOrders} طلب</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -150,206 +108,114 @@ function CookProfile() {
           <p className="text-center text-gray-500 py-10">لا توجد أطباق متاحة حالياً</p>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {dishes.map(dish => (
-              <div key={dish.id} className="bg-white rounded-2xl overflow-hidden shadow-md">
-                <div className="relative">
-                  {getDishImage(dish) ? (
-                    <img
-                      src={getDishImage(dish)}
-                      alt={dish.name}
-                      className="w-full h-56 object-cover"
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <div className="w-full h-56 bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center text-6xl">
-                      🍽️
-                    </div>
-                  )}
-                  {dish.isReadyToday && (
-                    <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                      <Flame className="w-4 h-4" />
-                      جاهز اليوم
-                    </div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="text-2xl font-bold text-dark mb-2">{dish.name}</h3>
-                  <p className="text-gray-600 mb-3">{dish.description}</p>
+            {dishes.map(dish => {
+              const inCartQty = getCartQuantity(dish.id);
+              const justAdded = addedDishId === dish.id;
 
-                  <div className="flex justify-between items-center mb-4">
-                    {dish.price && (
-                      <span className="text-2xl font-bold text-primary">{dish.price} دج</span>
+              return (
+                <div key={dish.id} className="bg-white rounded-2xl overflow-hidden shadow-md">
+                  <div className="relative">
+                    {getDishImage(dish) ? (
+                      <img
+                        src={getDishImage(dish)}
+                        alt={dish.name}
+                        className="w-full h-56 object-cover"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="w-full h-56 bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center text-6xl">
+                        🍽️
+                      </div>
                     )}
-                    {dish.availableQuantity > 0 && dish.availableQuantity <= 5 && (
-                      <span className="text-sm text-red-600 font-semibold">
-                        ⏳ باقي {dish.availableQuantity} فقط
-                      </span>
+                    {dish.isReadyToday && (
+                      <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                        <Flame className="w-4 h-4" />
+                        جاهز اليوم
+                      </div>
+                    )}
+                    {/* عدّاد السلة فوق الصورة */}
+                    {inCartQty > 0 && (
+                      <div className="absolute top-3 left-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        {inCartQty} في السلة
+                      </div>
                     )}
                   </div>
+                  <div className="p-5">
+                    <h3 className="text-2xl font-bold text-dark mb-2">{dish.name}</h3>
+                    {dish.description && (
+                      <p className="text-gray-600 mb-3 line-clamp-2">{dish.description}</p>
+                    )}
 
-                  <button
-                    onClick={() => setSelectedDish(dish)}
-                    className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition flex items-center justify-center gap-2"
-                  >
-                    <ShoppingBag className="w-5 h-5" />
-                    اطلب الآن
-                  </button>
+                    <div className="flex justify-between items-center mb-4">
+                      {dish.price && (
+                        <span className="text-2xl font-bold text-primary">{dish.price} دج</span>
+                      )}
+                      {dish.availableQuantity > 0 && dish.availableQuantity <= 5 && (
+                        <span className="text-sm text-red-600 font-semibold">
+                          ⏳ باقي {dish.availableQuantity} فقط
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleAddToCart(dish)}
+                      className={`w-full py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 ${
+                        justAdded
+                          ? 'bg-green-600 text-white scale-95'
+                          : inCartQty > 0
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-primary text-white hover:bg-orange-600'
+                      }`}
+                    >
+                      {justAdded ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          تمت الإضافة!
+                        </>
+                      ) : inCartQty > 0 ? (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          أضف المزيد ({inCartQty})
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-5 h-5" />
+                          أضف للسلة
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Modal الطلب */}
-      {selectedDish && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-2xl font-bold text-dark">اطلب: {selectedDish.name}</h3>
-                <button onClick={resetOrderForm} className="text-gray-500">
-                  <X className="w-6 h-6" />
-                </button>
+      {/* شريط السلة الثابت في الأسفل */}
+      {cookCartItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-orange-200 shadow-2xl z-30">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">
+                {cookCartItems.reduce((sum, item) => sum + item.quantity, 0)}
               </div>
-
-              <form onSubmit={handleConfirmOrder} className="space-y-3">
-                {/* اسم الزبون */}
-                <input
-                  required
-                  minLength="3"
-                  placeholder="اسمك الكامل"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                />
-
-                {/* رقم الهاتف مع validation */}
-                <div>
-                  <input
-                    required
-                    type="tel"
-                    inputMode="numeric"
-                    pattern="0[0-9]{9}"
-                    maxLength="10"
-                    placeholder="رقم الهاتف (0549741892)"
-                    value={customerPhone}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      if (value.length <= 10) {
-                        setCustomerPhone(value);
-                      }
-                    }}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                  />
-                  {customerPhone && customerPhone.length > 0 && customerPhone.length < 10 && (
-                    <p className="text-xs text-orange-600 mt-1">
-                      باقي {10 - customerPhone.length} أرقام
-                    </p>
-                  )}
-                  {customerPhone && customerPhone.length === 10 && !validatePhone(customerPhone) && (
-                    <p className="text-xs text-red-600 mt-1">
-                      الرقم يجب أن يبدأ بـ 0
-                    </p>
-                  )}
-                </div>
-
-                {/* نوع الطلب */}
-                <div>
-                  <label className="block font-semibold mb-2">نوع الطلب:</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setOrderType('instant')}
-                      className={`py-3 rounded-xl font-semibold ${
-                        orderType === 'instant' ? 'bg-primary text-white' : 'bg-gray-100'
-                      }`}
-                    >
-                      فوري
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOrderType('scheduled')}
-                      className={`py-3 rounded-xl font-semibold ${
-                        orderType === 'scheduled' ? 'bg-primary text-white' : 'bg-gray-100'
-                      }`}
-                    >
-                      مسبق
-                    </button>
-                  </div>
-                </div>
-
-                {/* الكمية */}
-                <div>
-                  <label className="block font-semibold mb-2">الكمية:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                  />
-                </div>
-
-                {/* التاريخ والوقت للطلب المسبق */}
-                {orderType === 'scheduled' && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-2">التاريخ:</label>
-                      <input
-                        type="date"
-                        required
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-2">الوقت:</label>
-                      <input
-                        type="time"
-                        required
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* ملاحظات */}
-                <div>
-                  <label className="block font-semibold mb-2">ملاحظات (اختياري):</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows="2"
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-primary outline-none"
-                    placeholder="مثال: بدون فلفل حار..."
-                  />
-                </div>
-
-                {/* المجموع */}
-                {selectedDish.price && (
-                  <div className="bg-cream p-3 rounded-xl text-center">
-                    <span className="text-gray-600">المجموع: </span>
-                    <span className="text-2xl font-bold text-primary">
-                      {selectedDish.price * quantity} دج
-                    </span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <ShoppingBag className="w-6 h-6" />
-                  {submitting ? 'جاري الإرسال...' : 'تأكيد الطلب'}
-                </button>
-              </form>
+              <div>
+                <p className="font-bold text-gray-800">
+                  {cookCartItems.reduce((sum, item) => sum + item.quantity, 0)} أطباق في السلة
+                </p>
+                <p className="text-sm text-orange-600 font-bold">
+                  {cookCartTotal.toLocaleString('ar-DZ')} دج
+                </p>
+              </div>
             </div>
+            <Link
+              to="/cart"
+              className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-2 shadow-md"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              عرض السلة
+            </Link>
           </div>
         </div>
       )}
