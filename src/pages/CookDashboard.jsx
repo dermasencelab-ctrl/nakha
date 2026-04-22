@@ -20,20 +20,17 @@ const CookDashboard = () => {
       if (!userProfile?.cookId) return;
 
       try {
-        // جلب بيانات الطباخة
         const cookDoc = await getDoc(doc(db, 'cooks', userProfile.cookId));
         if (cookDoc.exists()) {
           setCookData({ id: cookDoc.id, ...cookDoc.data() });
         }
 
-        // عدد الأطباق
         const dishesQuery = query(
           collection(db, 'dishes'),
           where('cookId', '==', userProfile.cookId)
         );
         const dishesSnapshot = await getDocs(dishesQuery);
 
-        // عدد الطلبات
         const ordersQuery = query(
           collection(db, 'orders'),
           where('cookId', '==', userProfile.cookId)
@@ -67,7 +64,7 @@ const CookDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-orange-50">
-        <div className="text-orange-600 text-xl">جاري التحميل...</div>
+        <div className="text-orange-600 text-xl">جارٍ التحميل...</div>
       </div>
     );
   }
@@ -83,7 +80,7 @@ const CookDashboard = () => {
                 مرحباً، {cookData?.name || 'طباخة'} 👩‍🍳
               </h1>
               <p className="text-gray-600">
-                لوحة تحكم نَكهة - أدِيري أكلك وطلباتك من هنا
+                لوحة التحكم — إدارة الأطباق والطلبات
               </p>
             </div>
             <button
@@ -94,14 +91,15 @@ const CookDashboard = () => {
             </button>
           </div>
         </div>
-{/* بطاقة الرصيد */}
+
+        {/* بطاقة الرصيد */}
         <Link
           to="/cook/wallet"
           className="block bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-md p-6 mb-6 hover:shadow-xl transition"
         >
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <p className="text-white/80 text-sm mb-1">الرصيد الحالي 💰</p>
+              <p className="text-white/80 text-sm mb-1">💰 الرصيد الحالي</p>
               <p className="text-3xl font-bold">
                 {(cookData?.balance || 0).toLocaleString('ar-DZ')} دج
               </p>
@@ -112,28 +110,29 @@ const CookDashboard = () => {
               )}
             </div>
             <div className="bg-white/20 backdrop-blur px-4 py-2 rounded-lg text-center">
-              <p className="text-sm">عرض المحفظة ←</p>
+              <p className="text-sm">عرض المحفظة →</p>
             </div>
           </div>
         </Link>
+
         {/* الإحصائيات */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-2xl shadow-md p-6 border-r-4 border-orange-500">
             <div className="text-4xl mb-2">🍽️</div>
             <div className="text-3xl font-bold text-gray-800">{stats.totalDishes}</div>
-            <div className="text-gray-600">عدد الأطباق</div>
+            <div className="text-gray-600">الأطباق المسجّلة</div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-md p-6 border-r-4 border-blue-500">
             <div className="text-4xl mb-2">📦</div>
             <div className="text-3xl font-bold text-gray-800">{stats.totalOrders}</div>
-            <div className="text-gray-600">إجمالي الطلبات</div>
+            <div className="text-gray-600">إجمالي الطلبات الواردة</div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-md p-6 border-r-4 border-green-500">
             <div className="text-4xl mb-2">⏳</div>
             <div className="text-3xl font-bold text-gray-800">{stats.pendingOrders}</div>
-            <div className="text-gray-600">طلبات جديدة</div>
+            <div className="text-gray-600">طلبات بانتظار الموافقة</div>
           </div>
         </div>
 
@@ -149,7 +148,7 @@ const CookDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600">
                   إدارة أطباقي
                 </h3>
-                <p className="text-gray-600 text-sm">إضافة، تعديل، وحذف الأطباق</p>
+                <p className="text-gray-600 text-sm">إضافة وتعديل وإدارة الأطباق</p>
               </div>
             </div>
           </Link>
@@ -164,7 +163,7 @@ const CookDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600">
                   الطلبات الواردة
                 </h3>
-                <p className="text-gray-600 text-sm">مراجعة وإدارة طلبات الزبائن</p>
+                <p className="text-gray-600 text-sm">متابعة الطلبات الواردة وإدارتها</p>
               </div>
             </div>
           </Link>
@@ -179,7 +178,7 @@ const CookDashboard = () => {
                 <h3 className="text-xl font-bold text-gray-800 group-hover:text-orange-600">
                   محفظتي
                 </h3>
-                <p className="text-gray-600 text-sm">الرصيد، الشحن، والمعاملات</p>
+                <p className="text-gray-600 text-sm">الرصيد وشحن الحساب وسجل المعاملات</p>
               </div>
             </div>
           </Link>
@@ -188,7 +187,7 @@ const CookDashboard = () => {
         {/* معلومات الحساب */}
         {cookData && (
           <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">معلومات حسابك</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-4">معلومات الحساب</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">الاسم:</span>
@@ -204,7 +203,7 @@ const CookDashboard = () => {
               </div>
               <div>
                 <span className="text-gray-500">الحالة:</span>
-                <p className="font-bold text-green-600">✅ معتمدة</p>
+                <p className="font-bold text-green-600">✅ حساب مفعّل</p>
               </div>
               {cookData.bio && (
                 <div className="md:col-span-2">

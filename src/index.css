@@ -2,14 +2,185 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
+/* ============================================ */
+/* الخطوط والأساسيات */
+/* ============================================ */
 * {
   font-family: 'Cairo', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   background-color: #FFF8F0;
   direction: rtl;
+  overscroll-behavior-y: none;
+  font-feature-settings: 'kern' 1;
+}
+
+/* ============================================ */
+/* Safe Areas للجوال (notch + home indicator) */
+/* ============================================ */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* ============================================ */
+/* Scrollbar - إخفاؤه للتمرير الأفقي */
+/* ============================================ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Scrollbar عام أرقى */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #fed7aa;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #fdba74;
+}
+
+/* ============================================ */
+/* Animations مخصصة - App-like feel */
+/* ============================================ */
+
+/* نبض بطيء للتبويب النشط */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ظهور من الأسفل */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+/* ظهور تدريجي */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* تكبير عند الظهور */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Shimmer للـ skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f5f5f4 0%,
+    #fafaf9 50%,
+    #f5f5f4 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* منزلق من الأسفل (للـ Bottom Sheets) */
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* اهتزاز خفيف (للتنبيهات) */
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-gentle-bounce {
+  animation: gentle-bounce 2s ease-in-out infinite;
+}
+
+/* ============================================ */
+/* تحسينات عامة للتفاعل */
+/* ============================================ */
+
+/* إزالة outline الافتراضي واستبداله بأجمل */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #ea580c;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* تحسين المدخلات */
+input, textarea, select {
+  font-family: 'Cairo', sans-serif;
+}
+
+/* Snap scrolling للتمرير الأفقي */
+.snap-x-padded {
+  scroll-snap-type: x mandatory;
+  scroll-padding: 1rem;
+}
+.snap-x-padded > * {
+  scroll-snap-align: start;
 }

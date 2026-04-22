@@ -2,8 +2,43 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { ArrowRight, Plus, Check, Flame, ShoppingCart, Star, Package } from 'lucide-react';
+import {
+  ArrowRight,
+  Plus,
+  Check,
+  Flame,
+  ShoppingCart,
+  Star,
+  Package,
+  Share2,
+  ExternalLink,
+  MapPin,
+  Award,
+  Sparkles,
+  ChefHat,
+  Minus,
+  AlertCircle,
+} from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+
+const getUnitLabel = (unit) => {
+  const labels = {
+    plate: 'طبق',
+    kg: 'كغ',
+    box: 'علبة',
+    piece: 'حبة',
+    liter: 'لتر',
+    dozen: 'دزينة',
+  };
+  return labels[unit] || 'وحدة';
+};
+
+const cookTypeLabels = {
+  home_cook: { emoji: '👩‍🍳', label: 'طباخة حرة' },
+  pastry: { emoji: '🍰', label: 'حلويات ومعجنات' },
+  traditional: { emoji: '🍲', label: 'أكل تقليدي' },
+  healthy: { emoji: '🥗', label: 'أكل صحي' },
+};
 
 function CookProfile() {
   const { id } = useParams();
@@ -11,6 +46,7 @@ function CookProfile() {
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addedDishId, setAddedDishId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const { addToCart, cart } = useCart();
 
@@ -20,12 +56,11 @@ function CookProfile() {
       if (cookDoc.exists()) {
         setCook({ id: cookDoc.id, ...cookDoc.data() });
       }
-
       const q = query(collection(db, 'dishes'), where('cookId', '==', id));
       const snapshot = await getDocs(q);
       const dishesData = snapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(d => d.available !== false && d.isActive !== false);
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((d) => d.available !== false && d.isActive !== false);
       setDishes(dishesData);
       setLoading(false);
     };
@@ -35,190 +70,473 @@ function CookProfile() {
   const getDishImage = (dish) => dish?.photo || dish?.image || '';
   const getCookImage = (cook) => cook?.photo || cook?.image || '';
 
-  // تحقق إذا الطبق موجود في السلة
   const getCartQuantity = (dishId) => {
-    const item = cart.find(i => i.dishId === dishId);
+    const item = cart.find((i) => i.dishId === dishId);
     return item ? item.quantity : 0;
   };
 
-  // إضافة للسلة مع تأثير بصري
   const handleAddToCart = (dish) => {
     addToCart(dish, cook);
     setAddedDishId(dish.id);
+    showToast('success', `تمت إضافة ${dish.name} للسلة! 🎉`);
     setTimeout(() => setAddedDishId(null), 1500);
   };
 
-  // عدد العناصر من هذي الطباخة في السلة
-  const cookCartItems = cart.filter(item => item.cookId === id);
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    const text = `🍲 شوف أطباق ${cook.name} على نَكهة!\n${url}`;
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+    showToast('success', 'تم فتح واتساب للمشاركة! 📲');
+  };
+
+  const cookCartItems = cart.filter((item) => item.cookId === id);
+  const cookCartCount = cookCartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cookCartTotal = cookCartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
-  if (!cook) return <div className="min-h-screen flex items-center justify-center">الطباخة غير موجودة</div>;
+  if (loading) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24">
+        <div className="h-80 animate-shimmer" />
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-3">
+          <div className="h-8 w-2/3 animate-shimmer rounded-lg" />
+          <div className="h-4 w-1/2 animate-shimmer rounded-md" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm">
+                <div className="h-44 animate-shimmer" />
+                <div className="p-4 space-y-2">
+                  <div className="h-5 animate-shimmer rounded-md" />
+                  <div className="h-3 w-2/3 animate-shimmer rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cook) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-[#FFF8F0] px-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔍</div>
+          <h2 className="text-xl font-extrabold text-stone-800 mb-2">الطباخة غير موجودة</h2>
+          <p className="text-stone-500 mb-5 text-sm">قد تكون محذوفة أو الرابط غير صحيح</p>
+          <Link
+            to="/cooks"
+            className="inline-flex items-center gap-2 bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold active:scale-95 transition shadow-lg shadow-orange-500/30"
+          >
+            <ArrowRight className="w-4 h-4" />
+            تصفح الطباخات
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const cookType = cookTypeLabels[cook.cookType];
+  const hasAvailableDishes = dishes.some((d) => d.isReadyToday || d.available);
 
   return (
-    <div className="min-h-screen bg-cream pb-28">
-      {/* Header مع صورة الطباخة */}
-      <div className="relative h-72 bg-gradient-to-b from-primary to-orange-700">
-        {getCookImage(cook) ? (
-          <img src={getCookImage(cook)} alt={cook.name} className="w-full h-full object-cover opacity-60" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-b from-primary to-orange-700" />
-        )}
-        <Link to="/cooks" className="absolute top-4 right-4 bg-white/90 p-2 rounded-full">
-          <ArrowRight className="w-5 h-5 text-dark" />
-        </Link>
-        <div className="absolute bottom-0 right-0 left-0 p-6 text-white">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h1 className="text-4xl font-bold">{cook.name}</h1>
+    <div dir="rtl" className="min-h-screen bg-[#FFF8F0]" style={{ paddingBottom: cookCartItems.length > 0 ? '160px' : '96px' }}>
+      {/* ============================================ */}
+      {/* Hero Header - صورة كبيرة مع معلومات */}
+      {/* ============================================ */}
+      <div className="relative">
+        {/* الصورة الخلفية */}
+        <div className="relative h-80 md:h-96 overflow-hidden">
+          {getCookImage(cook) ? (
+            <img
+              src={getCookImage(cook)}
+              alt={cook.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-700 flex items-center justify-center">
+              <span className="text-9xl">👩‍🍳</span>
+            </div>
+          )}
+
+          {/* تدرج متراكب */}
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/40 to-stone-900/20" />
+
+          {/* أزرار علوية ثابتة */}
+          <div className="absolute top-0 right-0 left-0 p-4 pt-safe flex items-center justify-between z-10">
+            <Link
+              to="/cooks"
+              className="w-10 h-10 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+              aria-label="رجوع"
+            >
+              <ArrowRight className="w-5 h-5 text-stone-800" strokeWidth={2.3} />
+            </Link>
+
+            <button
+              onClick={handleShare}
+              className="w-10 h-10 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+              aria-label="مشاركة"
+            >
+              <Share2 className="w-5 h-5 text-green-600" strokeWidth={2.3} />
+            </button>
+          </div>
+
+          {/* معلومات الطباخة على الصورة */}
+          <div className="absolute bottom-0 right-0 left-0 p-5 text-white">
+            {/* شارة العضو المؤسسة */}
             {cook.isFoundingMember && (
-              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                ⭐ عضو مؤسسة #{cook.foundingMemberNumber}
-              </span>
+              <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full text-[11px] font-black shadow-lg mb-2">
+                <Award className="w-3 h-3" strokeWidth={2.5} />
+                عضو مؤسس #{cook.foundingMemberNumber}
+              </div>
+            )}
+
+            <h1 className="text-3xl md:text-4xl font-black leading-tight drop-shadow-lg">
+              {cook.name}
+            </h1>
+
+            {cook.neighborhood && (
+              <p className="flex items-center gap-1.5 text-white/90 text-sm mt-2 drop-shadow">
+                <MapPin className="w-4 h-4" strokeWidth={2.4} />
+                <span className="font-semibold">{cook.neighborhood}</span>
+              </p>
             )}
           </div>
-          {cook.neighborhood && (
-            <p className="text-white/80 text-sm mb-1">📍 {cook.neighborhood}</p>
-          )}
-          <p className="text-white/90">{cook.bio || cook.description || ''}</p>
+        </div>
 
-          {/* التقييم والإحصائيات */}
-          <div className="flex items-center gap-4 mt-3 flex-wrap">
-            {cook.totalRatings > 0 && (
-              <div className="flex items-center gap-1 bg-white/20 backdrop-blur px-3 py-1 rounded-full">
-                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span className="font-bold">{cook.averageRating?.toFixed(1)}</span>
-                <span className="text-xs text-white/80">({cook.totalRatings})</span>
+        {/* بطاقة المعلومات (طافية فوق الصورة) */}
+        <div className="max-w-4xl mx-auto px-4 -mt-6 relative z-10">
+          <div className="bg-white rounded-3xl shadow-xl shadow-orange-200/40 p-4 md:p-5 animate-slide-up">
+            {/* السطر العلوي: نوع الطباخة + الإحصائيات */}
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              {cookType && (
+                <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">
+                  <span>{cookType.emoji}</span>
+                  {cookType.label}
+                </span>
+              )}
+              {hasAvailableDishes && (
+                <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                  </span>
+                  تطبخ الآن
+                </span>
+              )}
+            </div>
+
+            {/* الوصف */}
+            {(cook.bio || cook.description) && (
+              <p className="text-stone-600 text-sm leading-relaxed mb-4">
+                {cook.bio || cook.description}
+              </p>
+            )}
+
+            {/* الإحصائيات - 3 بطاقات */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <StatPill
+                icon={Star}
+                iconClass="text-amber-500 fill-amber-500"
+                value={cook.totalRatings > 0 ? cook.averageRating?.toFixed(1) : '—'}
+                label={cook.totalRatings > 0 ? `${cook.totalRatings} تقييم` : 'لا تقييمات'}
+                color="amber"
+              />
+              <StatPill
+                icon={Package}
+                value={cook.totalOrders > 0 ? `+${cook.totalOrders}` : '—'}
+                label="طلب مكتمل"
+                color="orange"
+              />
+              <StatPill
+                icon={ChefHat}
+                value={dishes.length}
+                label="طبق متاح"
+                color="green"
+              />
+            </div>
+
+            {/* التخصصات */}
+            {cook.specialties && cook.specialties.length > 0 && (
+              <div className="pt-3 border-t border-stone-100">
+                <p className="text-xs font-bold text-stone-500 mb-2 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  التخصصات
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {cook.specialties.map((s) => (
+                    <span
+                      key={s}
+                      className="bg-stone-100 text-stone-700 px-2.5 py-1 rounded-full text-xs font-semibold"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-            {cook.totalOrders > 0 && (
-              <div className="flex items-center gap-1 bg-white/20 backdrop-blur px-3 py-1 rounded-full">
-                <Package className="w-4 h-4" />
-                <span className="text-sm">+{cook.totalOrders} طلب</span>
-              </div>
+
+            {/* رابط خارجي */}
+            {cook.socialLink && (
+              <a
+                href={cook.socialLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 mt-3 bg-gradient-to-l from-stone-100 to-stone-50 hover:from-orange-100 hover:to-orange-50 text-stone-700 hover:text-orange-700 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all active:scale-[0.98]"
+              >
+                <ExternalLink className="w-4 h-4" strokeWidth={2.4} />
+                زيارة صفحتها الشخصية
+              </a>
             )}
           </div>
         </div>
       </div>
 
-      {/* قائمة الأطباق */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h2 className="text-3xl font-bold text-dark mb-6">الأطباق المتوفرة</h2>
+      {/* ============================================ */}
+      {/* عنوان الأطباق */}
+      {/* ============================================ */}
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <ChefHat className="w-5 h-5 text-white" strokeWidth={2.4} />
+            </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-stone-800 leading-none">
+                قائمة الأطباق
+              </h2>
+              <p className="text-xs text-stone-500 mt-1">
+                {dishes.length} {dishes.length === 1 ? 'طبق' : 'أطباق'} متاحة
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* ============================================ */}
+      {/* الأطباق */}
+      {/* ============================================ */}
+      <div className="max-w-4xl mx-auto px-4 pb-8">
         {dishes.length === 0 ? (
-          <p className="text-center text-gray-500 py-10">لا توجد أطباق متاحة حالياً</p>
+          <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
+            <div className="text-5xl mb-3">🍽️</div>
+            <h3 className="font-extrabold text-stone-800 mb-1">لا توجد أطباق متاحة</h3>
+            <p className="text-sm text-stone-500">ستضيف الطباخة أطباقها قريباً</p>
+          </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {dishes.map(dish => {
-              const inCartQty = getCartQuantity(dish.id);
-              const justAdded = addedDishId === dish.id;
-
-              return (
-                <div key={dish.id} className="bg-white rounded-2xl overflow-hidden shadow-md">
-                  <div className="relative">
-                    {getDishImage(dish) ? (
-                      <img
-                        src={getDishImage(dish)}
-                        alt={dish.name}
-                        className="w-full h-56 object-cover"
-                        onError={(e) => { e.target.style.display = 'none'; }}
-                      />
-                    ) : (
-                      <div className="w-full h-56 bg-gradient-to-br from-orange-100 to-amber-200 flex items-center justify-center text-6xl">
-                        🍽️
-                      </div>
-                    )}
-                    {dish.isReadyToday && (
-                      <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
-                        <Flame className="w-4 h-4" />
-                        جاهز اليوم
-                      </div>
-                    )}
-                    {/* عدّاد السلة فوق الصورة */}
-                    {inCartQty > 0 && (
-                      <div className="absolute top-3 left-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        {inCartQty} في السلة
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-2xl font-bold text-dark mb-2">{dish.name}</h3>
-                    {dish.description && (
-                      <p className="text-gray-600 mb-3 line-clamp-2">{dish.description}</p>
-                    )}
-
-                    <div className="flex justify-between items-center mb-4">
-                      {dish.price && (
-                        <span className="text-2xl font-bold text-primary">{dish.price} دج</span>
-                      )}
-                      {dish.availableQuantity > 0 && dish.availableQuantity <= 5 && (
-                        <span className="text-sm text-red-600 font-semibold">
-                          ⏳ باقي {dish.availableQuantity} فقط
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleAddToCart(dish)}
-                      className={`w-full py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 ${
-                        justAdded
-                          ? 'bg-green-600 text-white scale-95'
-                          : inCartQty > 0
-                          ? 'bg-green-600 text-white hover:bg-green-700'
-                          : 'bg-primary text-white hover:bg-orange-600'
-                      }`}
-                    >
-                      {justAdded ? (
-                        <>
-                          <Check className="w-5 h-5" />
-                          تمت الإضافة!
-                        </>
-                      ) : inCartQty > 0 ? (
-                        <>
-                          <Plus className="w-5 h-5" />
-                          أضف المزيد ({inCartQty})
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-5 h-5" />
-                          أضف للسلة
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dishes.map((dish, idx) => (
+              <DishCard
+                key={dish.id}
+                dish={dish}
+                idx={idx}
+                inCartQty={getCartQuantity(dish.id)}
+                justAdded={addedDishId === dish.id}
+                onAdd={() => handleAddToCart(dish)}
+                getDishImage={getDishImage}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {/* شريط السلة الثابت في الأسفل */}
+      {/* ============================================ */}
+      {/* شريط السلة السفلي */}
+      {/* ============================================ */}
       {cookCartItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-orange-200 shadow-2xl z-30">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                {cookCartItems.reduce((sum, item) => sum + item.quantity, 0)}
-              </div>
-              <div>
-                <p className="font-bold text-gray-800">
-                  {cookCartItems.reduce((sum, item) => sum + item.quantity, 0)} أطباق في السلة
-                </p>
-                <p className="text-sm text-orange-600 font-bold">
-                  {cookCartTotal.toLocaleString('ar-DZ')} دج
-                </p>
-              </div>
-            </div>
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-20 px-3 pb-3 md:pb-4 animate-slide-up">
+          <div className="max-w-4xl mx-auto">
             <Link
               to="/cart"
-              className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-700 transition flex items-center gap-2 shadow-md"
+              className="flex items-center justify-between bg-gradient-to-l from-orange-500 to-orange-600 text-white rounded-2xl p-3 shadow-2xl shadow-orange-500/40 active:scale-[0.98] transition-all"
             >
-              <ShoppingCart className="w-5 h-5" />
-              عرض السلة
+              <div className="flex items-center gap-3">
+                <div className="relative w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                  <ShoppingCart className="w-6 h-6" strokeWidth={2.3} />
+                  <span className="absolute -top-1 -left-1 min-w-[20px] h-5 px-1 bg-white text-orange-600 text-[11px] font-black rounded-full flex items-center justify-center ring-2 ring-orange-500">
+                    {cookCartCount}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs opacity-90 font-semibold leading-none">
+                    في سلتك من {cook.name}
+                  </p>
+                  <p className="text-lg font-black leading-tight mt-0.5">
+                    {cookCartTotal.toLocaleString('ar-DZ')} دج
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 bg-white text-orange-600 px-4 py-2.5 rounded-xl text-sm font-extrabold shadow-lg">
+                عرض السلة
+                <ArrowRight className="w-4 h-4 rotate-180" strokeWidth={2.8} />
+              </div>
             </Link>
           </div>
         </div>
       )}
+
+      {/* ============================================ */}
+      {/* Toast Notification */}
+      {/* ============================================ */}
+      {toast && (
+        <div className="fixed top-20 right-4 left-4 md:left-auto md:max-w-sm z-50 animate-slide-up">
+          <div
+            className={`flex items-center gap-3 bg-white border-r-4 rounded-2xl shadow-2xl p-4 ${
+              toast.type === 'success' ? 'border-green-500' : 'border-red-500'
+            }`}
+          >
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                toast.type === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}
+            >
+              {toast.type === 'success' ? (
+                <Check className="w-5 h-5 text-green-600" strokeWidth={3} />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600" strokeWidth={2.5} />
+              )}
+            </div>
+            <p className="text-sm font-bold text-stone-800 flex-1">{toast.message}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================ */
+/* بطاقة إحصائية */
+/* ============================================ */
+function StatPill({ icon: Icon, iconClass, value, label, color }) {
+  const colors = {
+    amber: 'bg-amber-50',
+    orange: 'bg-orange-50',
+    green: 'bg-green-50',
+  };
+  return (
+    <div className={`${colors[color]} rounded-2xl p-2.5 text-center`}>
+      <div className="flex items-center justify-center gap-1 mb-0.5">
+        <Icon className={`w-4 h-4 ${iconClass || 'text-stone-600'}`} strokeWidth={2.4} />
+        <span className="text-base font-black text-stone-800 leading-none">
+          {value}
+        </span>
+      </div>
+      <p className="text-[10px] font-semibold text-stone-500">{label}</p>
+    </div>
+  );
+}
+
+/* ============================================ */
+/* بطاقة طبق */
+/* ============================================ */
+function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
+  const unitLabel = getUnitLabel(dish.unit || 'plate');
+  const isLowStock = dish.availableQuantity > 0 && dish.availableQuantity <= 5;
+
+  return (
+    <div
+      style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}
+      className="animate-slide-up bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all group"
+    >
+      {/* الصورة */}
+      <div className="relative h-44 overflow-hidden">
+        {getDishImage(dish) ? (
+          <img
+            src={getDishImage(dish)}
+            alt={dish.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-orange-100 via-amber-100 to-orange-200 flex items-center justify-center">
+            <span className="text-6xl">🍽️</span>
+          </div>
+        )}
+
+        {/* شارات فوق الصورة */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+          {dish.isReadyToday && (
+            <div className="bg-orange-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
+              <Flame className="w-3 h-3" strokeWidth={2.5} />
+              جاهز اليوم
+            </div>
+          )}
+          {isLowStock && (
+            <div className="bg-red-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
+              ⏳ باقي {dish.availableQuantity}
+            </div>
+          )}
+        </div>
+
+        {/* شارة الكمية في السلة */}
+        {inCartQty > 0 && (
+          <div className="absolute top-3 left-3 bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-lg animate-scale-in">
+            <Check className="w-3 h-3" strokeWidth={3} />
+            {inCartQty} في السلة
+          </div>
+        )}
+      </div>
+
+      {/* محتوى البطاقة */}
+      <div className="p-4">
+        <h3 className="text-lg font-extrabold text-stone-800 leading-tight mb-1">
+          {dish.name}
+        </h3>
+
+        {dish.description && (
+          <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-3">
+            {dish.description}
+          </p>
+        )}
+
+        {/* السعر + زر الإضافة */}
+        <div className="flex items-end justify-between gap-3 pt-2 border-t border-stone-100">
+          <div>
+            <p className="text-[10px] text-stone-500 font-semibold leading-none mb-1">
+              السعر
+            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-black text-orange-600 leading-none">
+                {dish.price}
+              </span>
+              <span className="text-xs text-stone-500 font-semibold">
+                دج / {unitLabel}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={onAdd}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-90 shadow-lg ${
+              justAdded
+                ? 'bg-green-500 text-white shadow-green-500/40 scale-95'
+                : inCartQty > 0
+                ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30'
+                : 'bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30'
+            }`}
+          >
+            {justAdded ? (
+              <>
+                <Check className="w-4 h-4" strokeWidth={3} />
+                تمت!
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" strokeWidth={3} />
+                {inCartQty > 0 ? `+1 (${inCartQty})` : 'أضف'}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
