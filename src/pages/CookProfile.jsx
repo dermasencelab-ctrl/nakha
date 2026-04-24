@@ -18,8 +18,12 @@ import {
   ChefHat,
   Minus,
   AlertCircle,
+  Heart,
+  Clock,
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useFavorites } from '../hooks/useFavorites';
+import { DAYS, isInSchedule } from '../utils/schedule';
 
 const getUnitLabel = (unit) => {
   const labels = {
@@ -49,6 +53,7 @@ function CookProfile() {
   const [toast, setToast] = useState(null);
 
   const { addToCart, cart } = useCart();
+  const { isFavorite, toggle: toggleFavorite } = useFavorites();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -177,13 +182,35 @@ function CookProfile() {
               <ArrowRight className="w-5 h-5 text-stone-800" strokeWidth={2.3} />
             </Link>
 
-            <button
-              onClick={handleShare}
-              className="w-10 h-10 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
-              aria-label="مشاركة"
-            >
-              <Share2 className="w-5 h-5 text-green-600" strokeWidth={2.3} />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* زر المفضّلة */}
+              {cook && (
+                <button
+                  onClick={() => toggleFavorite(cook.id)}
+                  aria-label={isFavorite(cook?.id) ? 'إزالة من المفضّلة' : 'إضافة للمفضّلة'}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all ${
+                    isFavorite(cook?.id)
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white/95 backdrop-blur-md text-stone-500'
+                  }`}
+                >
+                  <Heart
+                    className="w-5 h-5"
+                    strokeWidth={2.3}
+                    fill={isFavorite(cook?.id) ? 'currentColor' : 'none'}
+                  />
+                </button>
+              )}
+
+              {/* زر المشاركة */}
+              <button
+                onClick={handleShare}
+                className="w-10 h-10 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+                aria-label="مشاركة"
+              >
+                <Share2 className="w-5 h-5 text-green-600" strokeWidth={2.3} />
+              </button>
+            </div>
           </div>
 
           {/* معلومات الطباخة على الصورة */}
@@ -296,6 +323,15 @@ function CookProfile() {
           </div>
         </div>
       </div>
+
+      {/* ============================================ */}
+      {/* ساعات العمل */}
+      {/* ============================================ */}
+      {cook.schedule && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <ScheduleWidget schedule={cook.schedule} />
+        </div>
+      )}
 
       {/* ============================================ */}
       {/* عنوان الأطباق */}
@@ -536,6 +572,72 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
             )}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================ */
+/* جدول ساعات العمل */
+/* ============================================ */
+function ScheduleWidget({ schedule }) {
+  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const todayKey = DAY_KEYS[new Date().getDay()];
+  const scheduleStatus = isInSchedule(schedule);
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-orange-500" strokeWidth={2.4} />
+          <h3 className="text-sm font-extrabold text-stone-800">ساعات العمل</h3>
+        </div>
+        <span
+          className={`text-[11px] font-black px-2.5 py-1 rounded-full ${
+            scheduleStatus === true
+              ? 'bg-green-100 text-green-700'
+              : scheduleStatus === false
+              ? 'bg-red-100 text-red-700'
+              : 'bg-stone-100 text-stone-600'
+          }`}
+        >
+          {scheduleStatus === true ? '🟢 مفتوحة الآن' : scheduleStatus === false ? '🔴 مغلقة الآن' : ''}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {DAYS.map(({ key, label }) => {
+          const day = schedule[key];
+          const isToday = key === todayKey;
+          return (
+            <div
+              key={key}
+              className={`flex flex-col items-center rounded-xl py-2 px-1 text-center ${
+                isToday
+                  ? 'bg-orange-500 text-white'
+                  : day?.enabled
+                  ? 'bg-orange-50 text-orange-800'
+                  : 'bg-stone-50 text-stone-400'
+              }`}
+            >
+              <span className="text-[10px] font-extrabold truncate w-full text-center">
+                {label.slice(0, 3)}
+              </span>
+              {day?.enabled ? (
+                <div className="mt-1 space-y-0.5">
+                  <p className={`text-[9px] font-bold leading-none ${isToday ? 'text-white/90' : 'text-orange-700'}`}>
+                    {day.from}
+                  </p>
+                  <p className={`text-[9px] font-bold leading-none ${isToday ? 'text-white/90' : 'text-orange-700'}`}>
+                    {day.to}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-[9px] mt-1 font-bold">مغلق</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -23,7 +23,9 @@ import CookDishes from './pages/CookDishes';
 import CookOrders from './pages/CookOrders';
 import CookWallet from './pages/CookWallet';
 import CookTopup from './pages/CookTopup';
+import CookSchedule from './pages/CookSchedule';
 import RateOrder from './pages/RateOrder';
+import Favorites from './pages/Favorites';
 
 // صفحات الأدمن
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -47,6 +49,7 @@ function App() {
 <Route path="/checkout" element={<Checkout />} />
 <Route path="/about" element={<About />} />
 <Route path="/privacy" element={<Privacy />} />
+        <Route path="/favorites" element={<Favorites />} />
 
         {/* صفحات المصادقة */}
         <Route path="/login" element={<Login />} />
@@ -91,6 +94,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['cook']}>
               <CookTopup />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cook/schedule"
+          element={
+            <ProtectedRoute allowedRoles={['cook']}>
+              <CookSchedule />
             </ProtectedRoute>
           }
         />

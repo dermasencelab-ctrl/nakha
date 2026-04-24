@@ -9,9 +9,13 @@ import {
   MapPin,
   ArrowLeft,
   Utensils,
+  Heart,
 } from 'lucide-react';
+import { useFavorites } from '../hooks/useFavorites';
+import { isInSchedule } from '../utils/schedule';
 
 function CookCard({ cook }) {
+  const { isFavorite, toggle } = useFavorites();
   // حساب Badges تلقائياً
   const getBadges = () => {
     const badges = [];
@@ -56,12 +60,16 @@ function CookCard({ cook }) {
   const totalOrders = cook.totalOrders || 0;
   const isAvailable = cook.availableDishesCount > 0;
   const cookImage = cook.photo || cook.image || '';
+  const favorited = isFavorite(cook.id);
+  const scheduleStatus = isInSchedule(cook.schedule); // true=open, false=closed, null=no schedule
+  const closedBySchedule = scheduleStatus === false;
 
   return (
-    <Link
-      to={`/cooks/${cook.id}`}
-      className="group block bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 active:scale-[0.98] transition-all duration-300 h-full"
-    >
+    <div className="relative group h-full">
+      <Link
+        to={`/cooks/${cook.id}`}
+        className="block bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 active:scale-[0.98] transition-all duration-300 h-full"
+      >
       {/* ============================================ */}
       {/* قسم الصورة */}
       {/* ============================================ */}
@@ -85,8 +93,12 @@ function CookCard({ cook }) {
         {/* تدرج سفلي لقراءة النص */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* شارة متاحة الآن (أعلى يمين) */}
-        {isAvailable && (
+        {/* شارة متاحة / مغلقة (أعلى يمين) */}
+        {closedBySchedule ? (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-stone-700/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-bold">
+            🕐 مغلقة الآن
+          </div>
+        ) : isAvailable ? (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-lg shadow-green-500/40">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
@@ -94,7 +106,7 @@ function CookCard({ cook }) {
             </span>
             متاحة
           </div>
-        )}
+        ) : null}
 
         {/* التقييم (أعلى يسار) */}
         {totalRatings > 0 && (
@@ -202,19 +214,37 @@ function CookCard({ cook }) {
         {/* زر CTA */}
         <div
           className={`flex items-center justify-between gap-2 px-4 py-3 rounded-2xl font-bold text-sm transition-all ${
-            isAvailable
+            isAvailable && !closedBySchedule
               ? 'bg-gradient-to-l from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 group-hover:shadow-xl group-hover:shadow-orange-500/40'
               : 'bg-stone-100 text-stone-700 group-hover:bg-orange-50 group-hover:text-orange-700'
           }`}
         >
-          <span>{isAvailable ? 'اطلب الآن' : 'عرض الملف'}</span>
+          <span>{isAvailable && !closedBySchedule ? 'اطلب الآن' : 'عرض الملف'}</span>
           <ArrowLeft
             className="w-4 h-4 group-hover:-translate-x-1 transition-transform"
             strokeWidth={2.6}
           />
         </div>
       </div>
-    </Link>
+      </Link>
+
+      {/* زر القلب — خارج الـLink لتجنب التنقل عند الضغط */}
+      <button
+        onClick={() => toggle(cook.id)}
+        aria-label={favorited ? 'إزالة من المفضّلة' : 'إضافة للمفضّلة'}
+        className={`absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 ${
+          favorited
+            ? 'bg-red-500 text-white shadow-red-400/50'
+            : 'bg-white/90 backdrop-blur-sm text-stone-400 hover:text-red-400'
+        }`}
+      >
+        <Heart
+          className="w-4 h-4"
+          strokeWidth={2.3}
+          fill={favorited ? 'currentColor' : 'none'}
+        />
+      </button>
+    </div>
   );
 }
 

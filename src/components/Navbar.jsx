@@ -16,6 +16,8 @@ import {
   Utensils,
   Wallet,
   Settings,
+  Heart,
+  CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -23,7 +25,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth() || {};
+  const { currentUser, userProfile, logout } = useAuth() || {};
 
   // عدد عناصر السلة (من localStorage أو من حيث تحفظها)
   const [cartCount, setCartCount] = useState(0);
@@ -86,8 +88,8 @@ export default function Navbar() {
     { to: '/my-orders', icon: ClipboardList, label: 'طلباتي' },
   ];
 
-  const isCook = user?.role === 'cook';
-  const isAdmin = user?.role === 'admin';
+  const isCook = userProfile?.role === 'cook';
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <>
@@ -150,6 +152,28 @@ export default function Navbar() {
 
           {/* Right side buttons */}
           <div className="flex items-center gap-2">
+            {/* زر "حسابي" للطباخة المسجّلة */}
+            {isCook && (
+              <Link
+                to="/cook/dashboard"
+                className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-black active:scale-95 transition-all shadow-md shadow-orange-500/30"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <span className="hidden sm:inline">حسابي</span>
+              </Link>
+            )}
+
+            {/* زر "حسابي" للأدمن */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 bg-stone-700 hover:bg-stone-800 text-white px-3 py-2 rounded-xl text-xs font-black active:scale-95 transition-all"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" strokeWidth={2.5} />
+                <span className="hidden sm:inline">الإدارة</span>
+              </Link>
+            )}
+
             {/* Cart icon (mobile, next to menu) */}
             <Link
               to="/cart"
@@ -293,14 +317,14 @@ export default function Navbar() {
               </div>
 
               {/* معلومات المستخدم */}
-              {user ? (
+              {currentUser ? (
                 <div className="flex items-center gap-3 bg-white/15 backdrop-blur rounded-2xl p-3">
                   <div className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center">
                     <User className="w-6 h-6" strokeWidth={2.2} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold truncate">
-                      {user.displayName || user.email || 'مستخدم'}
+                      {userProfile?.name || currentUser.email || 'مستخدم'}
                     </p>
                     <p className="text-xs text-white/80">
                       {isCook ? 'طباخة' : isAdmin ? 'مدير' : 'عميل'}
@@ -328,6 +352,7 @@ export default function Navbar() {
                 <MenuItem to="/cook/dishes" icon={Utensils} label="أطباقي" />
                 <MenuItem to="/cook/orders" icon={ClipboardList} label="الطلبات" />
                 <MenuItem to="/cook/wallet" icon={Wallet} label="المحفظة" />
+                <MenuItem to="/cook/schedule" icon={CalendarClock} label="أوقات العمل" />
               </MenuSection>
             )}
 
@@ -341,18 +366,23 @@ export default function Navbar() {
               </MenuSection>
             )}
 
+            {/* مفضّلاتي */}
+            <MenuSection title="قائمتي">
+              <MenuItem to="/favorites" icon={Heart} label="مفضّلاتي" />
+            </MenuSection>
+
             {/* روابط عامة */}
             <MenuSection title="المنصة">
               <MenuItem to="/about" icon={Info} label="عن نَكهة" />
               <MenuItem to="/privacy" icon={Shield} label="سياسة الخصوصية" />
-              {!user && (
+              {!currentUser && (
                 <MenuItem to="/cook/signup" icon={ChefHat} label="سجّل كطباخة" />
               )}
             </MenuSection>
           </div>
 
           {/* زر تسجيل الخروج */}
-          {user && (
+          {currentUser && (
             <div className="px-4 pb-6 pb-safe border-t border-orange-100 pt-4">
               <button
                 onClick={() => {

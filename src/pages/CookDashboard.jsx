@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useOrderNotifications } from '../hooks/useOrderNotifications';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -18,6 +19,7 @@ import {
   Package,
   Wallet,
   Bell,
+  BellOff,
   TrendingUp,
   Clock,
   AlertCircle,
@@ -33,6 +35,7 @@ import {
   DollarSign,
   Calendar,
   Activity,
+  CalendarClock,
 } from 'lucide-react';
 
 const CookDashboard = () => {
@@ -41,6 +44,8 @@ const CookDashboard = () => {
   const [cookData, setCookData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [togglingStatus, setTogglingStatus] = useState(false);
+
+  const { soundEnabled, toggleSound } = useOrderNotifications(userProfile?.cookId);
 
   // إحصائيات ديناميكية
   const [stats, setStats] = useState({
@@ -249,6 +254,24 @@ const CookDashboard = () => {
               </div>
             </div>
 
+            <div className="flex items-center gap-2">
+            {/* زر الصوت */}
+            <button
+              onClick={toggleSound}
+              title={soundEnabled ? 'إيقاف إشعارات الصوت' : 'تفعيل إشعارات الصوت'}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
+                soundEnabled
+                  ? 'bg-orange-100 text-orange-600'
+                  : 'bg-stone-100 text-stone-400'
+              }`}
+            >
+              {soundEnabled ? (
+                <Bell className="w-4 h-4" strokeWidth={2.4} />
+              ) : (
+                <BellOff className="w-4 h-4" strokeWidth={2.4} />
+              )}
+            </button>
+
             {/* Toggle حالة التوفر */}
             <button
               onClick={toggleAvailability}
@@ -275,6 +298,7 @@ const CookDashboard = () => {
               </span>
               {isAccepting ? 'متاحة' : 'غير متاحة'}
             </button>
+            </div>
           </div>
         </div>
       </header>
@@ -444,6 +468,12 @@ const CookDashboard = () => {
               icon={ChefHat}
               label="ملفي العام"
               color="amber"
+            />
+            <ActionCard
+              to="/cook/schedule"
+              icon={CalendarClock}
+              label="أوقات العمل"
+              color="violet"
             />
           </div>
         </div>
@@ -621,6 +651,7 @@ function ActionCard({ to, icon: Icon, label, badge, badgeColor = 'orange', color
     blue: 'from-blue-400 to-blue-500 shadow-blue-500/30',
     green: 'from-green-400 to-emerald-500 shadow-green-500/30',
     amber: 'from-amber-400 to-orange-500 shadow-amber-500/30',
+    violet: 'from-violet-400 to-purple-500 shadow-violet-500/30',
   };
   const badgeClass =
     badgeColor === 'red'

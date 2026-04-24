@@ -84,7 +84,7 @@ const CookWallet = () => {
   const txTypeConfig = {
     welcome_bonus: { label: '🎁 هدية ترحيبية', color: 'text-green-600', sign: '+' },
     topup: { label: '💵 شحن رصيد', color: 'text-green-600', sign: '+' },
-    commission: { label: '💰 عمولة', color: 'text-red-600', sign: '-' },
+    commission: { label: '📋 تسوية طلب', color: 'text-red-600', sign: '-' },
     free_order: { label: '🎁 طلب مجاني', color: 'text-blue-600', sign: '' },
   };
 
@@ -169,22 +169,18 @@ const CookWallet = () => {
         )}
 
         {/* الإحصائيات */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-xs text-gray-500 mb-1">إجمالي العمولات المخصومة</p>
-            <p className="text-2xl font-bold text-red-600">
-              {(cookData?.totalCommission || 0).toLocaleString('ar-DZ')} دج
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-4">
             <p className="text-xs text-gray-500 mb-1">الطلبات المكتملة</p>
             <p className="text-2xl font-bold text-blue-600">
               {cookData?.totalOrders || 0}
             </p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 col-span-2 md:col-span-1">
-            <p className="text-xs text-gray-500 mb-1">عمولة الموقع</p>
-            <p className="text-2xl font-bold text-orange-600">9%</p>
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <p className="text-xs text-gray-500 mb-1">إجمالي المعاملات</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {transactions.length}
+            </p>
           </div>
         </div>
 
@@ -239,7 +235,7 @@ const CookWallet = () => {
                 activeTab === 'expense' ? 'bg-red-600 text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              📤 خصومات
+              📤 تسويات
             </button>
           </div>
 

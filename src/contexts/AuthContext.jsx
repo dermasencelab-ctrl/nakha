@@ -4,9 +4,14 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+
+// Ensure sessions survive browser restarts — set once at module load
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 const AuthContext = createContext();
 

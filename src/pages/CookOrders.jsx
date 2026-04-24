@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  collection, query, where, getDocs, doc, getDoc, updateDoc,
+  collection, query, where, onSnapshot, doc, getDoc, updateDoc,
   addDoc, serverTimestamp, increment,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { COMMISSION_RATE, FOUNDING_MEMBERS } from '../config/settings';
-import { Phone, PhoneOff, Lock } from 'lucide-react';
+import { Phone, PhoneOff, Lock, Bell, BellOff } from 'lucide-react';
+import { useOrderNotifications } from '../hooks/useOrderNotifications';
 
 const unitLabels = {
   plate: 'طبق', kg: 'كغ', box: 'علبة',
@@ -21,6 +22,18 @@ const CookOrders = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [actionLoading, setActionLoading] = useState(null);
 
+  const { newCount, clearNewCount, soundEnabled, toggleSound } =
+    useOrderNotifications(userProfile?.cookId);
+
+  // Auto-switch to pending tab and clear badge when new orders arrive
+  const prevNewCount = useRef(0);
+  useEffect(() => {
+    if (newCount > prevNewCount.current) {
+      setActiveTab('pending');
+    }
+    prevNewCount.current = newCount;
+  }, [newCount]);
+
   const tabs = [
     { value: 'pending', label: '🔔 جديدة', color: 'orange' },
     { value: 'preparing', label: '👩‍🍳 قيد التحضير', color: 'blue' },
@@ -29,23 +42,31 @@ const CookOrders = () => {
     { value: 'cancelled', label: '❌ ملغاة', color: 'red' },
   ];
 
-  const fetchOrders = async () => {
+  useEffect(() => {
     if (!userProfile?.cookId) return;
-    setLoading(true);
-    try {
-      const q = query(collection(db, 'orders'), where('cookId', '==', userProfile.cookId));
-      const snapshot = await getDocs(q);
-      const ordersData = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      ordersData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setOrders(ordersData);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => { fetchOrders(); }, [userProfile]);
+    const q = query(
+      collection(db, 'orders'),
+      where('cookId', '==', userProfile.cookId)
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setOrders(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error listening to orders:', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, [userProfile]);
 
   const shouldShowPhone = (status) => {
     return status === 'ready' || status === 'completed';
@@ -110,8 +131,7 @@ const CookOrders = () => {
         ...(newStatus === 'completed' ? { completedAt: serverTimestamp() } : {}),
         updatedAt: serverTimestamp(),
       });
-
-      await fetchOrders();
+      // onSnapshot handles UI refresh automatically
     } catch (error) {
       console.error('Error updating order:', error);
       alert('حدث خطأ أثناء تحديث الطلب');
@@ -146,15 +166,56 @@ const CookOrders = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 py-8 px-4" dir="rtl">
       <div className="max-w-5xl mx-auto">
         <div className="mb-6">
-          <Link to="/cook/dashboard" className="text-orange-600 text-sm hover:underline mb-2 inline-block">
-            ← العودة إلى لوحة التحكم
-          </Link>
+          <div className="flex items-center justify-between mb-2">
+            <Link to="/cook/dashboard" className="text-orange-600 text-sm hover:underline">
+              ← العودة إلى لوحة التحكم
+            </Link>
+            {/* زر تفعيل/تعطيل الصوت */}
+            <button
+              onClick={toggleSound}
+              title={soundEnabled ? 'إيقاف إشعارات الصوت' : 'تفعيل إشعارات الصوت'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                soundEnabled
+                  ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                  : 'bg-gray-100 text-gray-500 border border-gray-200'
+              }`}
+            >
+              {soundEnabled ? (
+                <Bell className="w-3.5 h-3.5" strokeWidth={2.4} />
+              ) : (
+                <BellOff className="w-3.5 h-3.5" strokeWidth={2.4} />
+              )}
+              {soundEnabled ? 'الصوت مفعّل' : 'الصوت معطّل'}
+            </button>
+          </div>
           <h1 className="text-3xl font-bold text-gray-800">الطلبات الواردة 📋</h1>
         </div>
 
+        {/* بانر طلب جديد */}
+        {newCount > 0 && (
+          <button
+            onClick={() => { setActiveTab('pending'); clearNewCount(); }}
+            className="w-full mb-4 flex items-center justify-between gap-3 bg-gradient-to-l from-orange-500 to-red-500 text-white px-4 py-3 rounded-2xl shadow-lg shadow-orange-500/30 animate-pulse active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+              </span>
+              <span className="font-black text-sm">
+                {newCount === 1 ? 'طلب جديد وصل!' : `${newCount} طلبات جديدة وصلت!`}
+              </span>
+            </div>
+            <span className="text-xs font-bold opacity-90">عرض الطلبات ←</span>
+          </button>
+        )}
+
         <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2 overflow-x-auto">
           {tabs.map((tab) => (
-            <button key={tab.value} onClick={() => setActiveTab(tab.value)}
+            <button key={tab.value} onClick={() => {
+              setActiveTab(tab.value);
+              if (tab.value === 'pending') clearNewCount();
+            }}
               className={`flex-shrink-0 py-3 px-4 rounded-lg font-bold transition whitespace-nowrap ${
                 activeTab === tab.value ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -162,7 +223,14 @@ const CookOrders = () => {
                 backgroundColor: tab.color === 'orange' ? '#ea580c' : tab.color === 'blue' ? '#2563eb' :
                   tab.color === 'green' ? '#16a34a' : tab.color === 'gray' ? '#4b5563' : '#dc2626',
               } : {}}>
-              {tab.label}
+              <span className="relative">
+                {tab.label}
+                {tab.value === 'pending' && newCount > 0 && (
+                  <span className="absolute -top-2 -left-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                    {newCount}
+                  </span>
+                )}
+              </span>
               {counts[tab.value] > 0 && (
                 <span className={`mr-2 px-2 py-0.5 rounded-full text-sm ${activeTab === tab.value ? 'bg-white text-gray-800' : 'bg-gray-200'}`}>
                   {counts[tab.value]}

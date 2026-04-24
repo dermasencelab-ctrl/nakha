@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -15,6 +15,16 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+// Module-level pure helpers — stable references, no re-creation on render
+const getCookImage = (cook) => cook?.photo || cook?.image || '';
+const getDishImage = (dish) => dish?.photo || dish?.image || '';
+
+// Cloudinary URL optimizer: WebP/AVIF auto-format, quality auto, resize
+const optimizeImage = (url, width = 400) => {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+};
+
 function Home() {
   const navigate = useNavigate();
   const [availableCooks, setAvailableCooks] = useState([]);
@@ -26,16 +36,18 @@ function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const cooksSnapshot = await getDocs(collection(db, 'cooks'));
+        // Parallel queries — both fire simultaneously instead of sequentially
+        const [cooksSnapshot, dishesSnapshot] = await Promise.all([
+          getDocs(collection(db, 'cooks')),
+          getDocs(query(collection(db, 'dishes'), where('available', '==', true))),
+        ]);
+
         const allCooks = cooksSnapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }))
           .filter(
             (c) => c.status === 'approved' || (c.isActive !== false && !c.status)
           );
 
-        const dishesSnapshot = await getDocs(
-          query(collection(db, 'dishes'), where('available', '==', true))
-        );
         const availableDishes = dishesSnapshot.docs.map((d) => ({
           id: d.id,
           ...d.data(),
@@ -75,9 +87,6 @@ function Home() {
     };
     fetchData();
   }, []);
-
-  const getCookImage = (cook) => cook?.photo || cook?.image || '';
-  const getDishImage = (dish) => dish?.photo || dish?.image || '';
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -171,8 +180,6 @@ function Home() {
                 key={cook.id}
                 cook={cook}
                 idx={idx}
-                getCookImage={getCookImage}
-                getDishImage={getDishImage}
               />
             ))}
           </div>
@@ -210,8 +217,10 @@ function Home() {
               {/* الصورة */}
 <div className="relative w-full sm:w-56 h-64 sm:h-auto flex-shrink-0">                {getCookImage(featuredCook) ? (
                   <img
-                    src={getCookImage(featuredCook)}
+                    src={optimizeImage(getCookImage(featuredCook), 480)}
                     alt={featuredCook.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -239,7 +248,7 @@ function Home() {
                     {featuredCook.totalRatings > 0 && (
                       <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full text-xs font-bold">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        {featuredCook.averageRating.toFixed(1)}
+                        {(featuredCook.averageRating || 0).toFixed(1)}
                       </div>
                     )}
                   </div>
@@ -317,9 +326,10 @@ function Home() {
                   <div className="relative aspect-square rounded-2xl overflow-hidden shadow-sm mb-2">
                     {getCookImage(cook) ? (
                       <img
-                        src={getCookImage(cook)}
+                        src={optimizeImage(getCookImage(cook), 200)}
                         alt={cook.name}
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
@@ -336,7 +346,7 @@ function Home() {
                     {/* تقييم */}
                     <div className="absolute bottom-1.5 right-1.5 left-1.5 flex items-center justify-center gap-1 text-white text-xs font-bold">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                      {cook.averageRating.toFixed(1)}
+                      {(cook.averageRating || 0).toFixed(1)}
                       <span className="text-white/70 text-[10px]">
                         ({cook.totalRatings})
                       </span>
@@ -478,7 +488,7 @@ function SectionHeader({ title, subtitle, dotColor, link }) {
   );
 }
 
-function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
+const AvailableCookCard = memo(function AvailableCookCard({ cook, idx }) {
   const firstDish = cook.availableDishes[0];
   return (
     <Link
@@ -489,9 +499,10 @@ function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
       <div className="relative aspect-[4/5] overflow-hidden">
         {getCookImage(cook) ? (
           <img
-            src={getCookImage(cook)}
+            src={optimizeImage(getCookImage(cook), 300)}
             alt={cook.name}
             loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -513,7 +524,7 @@ function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
         {cook.totalRatings > 0 && (
           <div className="absolute top-2 left-2 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-0.5">
             <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-            {cook.averageRating.toFixed(1)}
+            {(cook.averageRating || 0).toFixed(1)}
           </div>
         )}
 
@@ -537,8 +548,10 @@ function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
           <div className="flex items-center gap-2">
             {getDishImage(firstDish) ? (
               <img
-                src={getDishImage(firstDish)}
+                src={optimizeImage(getDishImage(firstDish), 64)}
                 alt={firstDish.name}
+                loading="lazy"
+                decoding="async"
                 className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
               />
             ) : (
@@ -559,7 +572,7 @@ function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
       )}
     </Link>
   );
-}
+});
 
 function CooksGridSkeleton() {
   return (
