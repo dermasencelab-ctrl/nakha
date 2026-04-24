@@ -31,7 +31,7 @@ export default function Navbar() {
   useEffect(() => {
     const updateCartCount = () => {
       try {
-        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const cart = JSON.parse(localStorage.getItem('nakha_cart') || '[]');
         const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
         setCartCount(count);
       } catch {
@@ -105,12 +105,21 @@ export default function Navbar() {
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 active:scale-95 transition-transform">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+            <img
+              src="/og-image.png"
+              alt="نَكهة"
+              className="w-10 h-10 rounded-2xl object-cover shadow-lg shadow-orange-500/30"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }}
+            />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 items-center justify-center shadow-lg shadow-orange-500/30 hidden">
               <ChefHat className="w-5 h-5 text-white" strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold text-orange-600 leading-none">نَكهة</span>
-              <span className="text-[10px] text-stone-500 font-medium">أكل بيتي بشار</span>
+              <span className="text-[10px] text-stone-500 font-medium">أكل بيتي في بشار</span>
             </div>
           </Link>
 

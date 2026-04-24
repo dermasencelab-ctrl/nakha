@@ -276,7 +276,7 @@ function MyOrders() {
                 inputMode="numeric"
                 maxLength="10"
                 required
-                placeholder="0549741892"
+                placeholder="05XXXXXXXXX"
                 value={phone}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
@@ -465,10 +465,11 @@ function OrderCard({ order, idx, formatDate, formatTime }) {
   // عدد الأطباق
   const itemsCount = order.items?.length || 1;
 
-  // التواصل عبر واتساب مع الطباخة
-  const handleWhatsApp = () => {
-    const text = `السلام عليكم، بخصوص طلبي رقم #${shortId} من "${order.dishName || 'الطلب'}"`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+ // التواصل مع خدمة العملاء (الأدمن)
+  const handleContact = () => {
+    const text = `السلام عليكم، بخصوص طلبي رقم #${shortId} من الطباخة "${order.cookName}".\n\nاسم الطبق: ${order.dishName || 'غير محدد'}\nالحالة: ${status.label}\n\nملاحظتي:\n`;
+    const adminPhone = '213549741892'; // ← غيّر هذا لرقمك أنت كأدمن
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   return (
@@ -617,14 +618,14 @@ function OrderCard({ order, idx, formatDate, formatTime }) {
             </div>
           )}
 
-          {/* زر التواصل (للطلبات النشطة) */}
+          {/* زر التواصل مع خدمة العملاء */}
           {isActive && (
             <button
-              onClick={handleWhatsApp}
-              className="flex items-center justify-center gap-1 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 py-2.5 px-3 rounded-2xl font-bold text-xs active:scale-95 transition-all"
+              onClick={handleContact}
+              className="flex items-center justify-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2.5 px-3 rounded-2xl font-bold text-xs active:scale-95 transition-all"
             >
               <MessageCircle className="w-4 h-4" strokeWidth={2.4} />
-              تواصل
+              خدمة العملاء
             </button>
           )}
         </div>

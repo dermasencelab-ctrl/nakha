@@ -65,7 +65,7 @@ function CookCard({ cook }) {
       {/* ============================================ */}
       {/* قسم الصورة */}
       {/* ============================================ */}
-      <div className="relative h-44 overflow-hidden">
+      <div className="relative h-36 overflow-hidden">
         {cookImage ? (
           <img
             src={cookImage}

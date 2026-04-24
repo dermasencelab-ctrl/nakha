@@ -66,8 +66,12 @@ function Cooks() {
         const availableDishes = dishesSnapshot.docs.map((d) => d.data());
 
         cooksData = cooksData.map((cook) => {
-          const count = availableDishes.filter((d) => d.cookId === cook.id).length;
-          return { ...cook, availableDishesCount: count };
+          const cookDishes = availableDishes.filter((d) => d.cookId === cook.id);
+          return {
+            ...cook,
+            availableDishesCount: cookDishes.length,
+            dishNames: cookDishes.map((d) => d.name || ''),
+          };
         });
 
         setCooks(cooksData);
@@ -101,15 +105,23 @@ function Cooks() {
   const filteredCooks = useMemo(() => {
     let result = [...cooks];
 
-    // بحث نصي
+    // بحث نصي (في اسم الطباخة + الحي + النبذة + أسماء الأطباق)
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      result = result.filter(
-        (c) =>
+      result = result.filter((c) => {
+        const matchesCook =
           c.name?.toLowerCase().includes(q) ||
           c.neighborhood?.toLowerCase().includes(q) ||
-          c.bio?.toLowerCase().includes(q)
-      );
+          c.bio?.toLowerCase().includes(q) ||
+          c.cookDescription?.toLowerCase().includes(q);
+
+        // البحث في أسماء الأطباق
+        const matchesDishes = c.dishNames?.some((name) =>
+          name.toLowerCase().includes(q)
+        );
+
+        return matchesCook || matchesDishes;
+      });
     }
 
     // فلتر الحالة
@@ -119,9 +131,9 @@ function Cooks() {
       result = result.filter((c) => (c.averageRating || 0) >= 4);
     }
 
-    // فلتر النوع
+    // فلتر النوع (الطباخات بدون نوع تُعتبر طباخة حرة)
     if (typeFilter !== 'all') {
-      result = result.filter((c) => c.cookType === typeFilter);
+      result = result.filter((c) => (c.cookType || 'home_cook') === typeFilter);
     }
 
     // الترتيب
@@ -308,7 +320,7 @@ function Cooks() {
             onClear={clearAllFilters}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredCooks.map((cook, idx) => (
               <div
                 key={cook.id}
@@ -446,8 +458,8 @@ function EmptyState({ hasFilters, onClear }) {
       </h3>
       <p className="text-sm text-stone-500 mb-5 max-w-xs mx-auto">
         {hasFilters
-          ? 'جرب تغيير الفلاتر أو البحث بكلمة أخرى'
-          : 'سنضيف طباخات جديدات قريباً'}
+          ?  'يرجى تغيير خيارات التصفية أو البحث بكلمة أخرى'
+          : 'ستتم إضافة طباخات جديدات قريباً'}
       </p>
       {hasFilters && (
         <button

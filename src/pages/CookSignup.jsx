@@ -98,9 +98,11 @@ const CookSignup = () => {
     photo: '',
     cookType: 'home_cook',
     specialties: [],
+    cookDescription: '',
     socialLink: '',
     portfolioImages: [],
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -190,7 +192,8 @@ const CookSignup = () => {
         bio: formData.bio.trim(),
         photo: formData.photo,
         cookType: formData.cookType,
-        specialties: formData.specialties,
+        specialties: [],
+        cookDescription: formData.cookDescription.trim(),
         socialLink: formData.socialLink.trim(),
         portfolioImages: formData.portfolioImages,
       });
@@ -205,8 +208,14 @@ const CookSignup = () => {
         setCurrentStep(1);
       } else if (err.code === 'auth/weak-password') {
         setError('كلمة المرور ضعيفة');
+      } else if (err.code === 'auth/phone-already-in-use') {
+        setError('رقم الهاتف مسجّل مسبقاً، يرجى استخدام رقم آخر');
+        setCurrentStep(1);
+      } else if (err.code === 'auth/name-already-in-use') {
+        setError('هذا الاسم مسجّل مسبقاً، يرجى استخدام اسم آخر');
+        setCurrentStep(1);
       } else {
-        setError('حدث خطأ، حاول مرة أخرى');
+        setError('حدث خطأ، يرجى المحاولة مرة أخرى');
       }
       setLoading(false);
     }
@@ -322,18 +331,18 @@ const CookSignup = () => {
           <section className="animate-slide-up space-y-4">
             <StepHeader
               icon={User}
-              title="معلوماتك الشخصية"
-              subtitle="لنتعرّف عليكِ أكثر"
+              title="المعلومات الشخصية"
+              subtitle="يرجى تعبئة البيانات التالية"
             />
 
             <div className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 p-5 space-y-4">
               <InputField
-                label="الاسم الكامل"
+                label="الاسم (سيظهر في صفحتك كطباخة)"
                 icon={User}
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="فاطمة الزهراء"
+                placeholder="الاسم الذي سيراه الزبائن"
                 required
               />
 
@@ -355,7 +364,7 @@ const CookSignup = () => {
               />
 
               <InputField
-                label="رقم الهاتف (واتساب)"
+                label="رقم الهاتف"
                 icon={Phone}
                 name="phone"
                 type="tel"
@@ -368,7 +377,7 @@ const CookSignup = () => {
                     setFormData({ ...formData, phone: val });
                   }
                 }}
-                placeholder="0555123456"
+                placeholder="05XXXXXXXX"
                 dir="ltr"
                 hint="10 أرقام، يبدأ بـ 05 أو 06 أو 07"
                 required
@@ -385,7 +394,7 @@ const CookSignup = () => {
                 name="neighborhood"
                 value={formData.neighborhood}
                 onChange={handleChange}
-                placeholder="مثلاً: حي الفرح"
+                placeholder="مثلاً: حي البدر"
                 required
               />
             </div>
@@ -399,8 +408,8 @@ const CookSignup = () => {
           <section className="animate-slide-up space-y-4">
             <StepHeader
               icon={ChefHat}
-              title="نوع نشاطكِ"
-              subtitle="اختاري ما يعبّر عن أكلكِ"
+              title="نوع النشاط"
+              subtitle="اختر ما يناسب نشاطك"
             />
 
             {/* بطاقات النوع */}
@@ -417,55 +426,30 @@ const CookSignup = () => {
               ))}
             </div>
 
-            {/* التخصصات */}
+            {/* وصف النشاط */}
             <div className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-extrabold text-stone-800">
-                    تخصصاتكِ
-                  </h3>
-                  <p className="text-[11px] text-stone-500 mt-0.5">
-                    اختاري ما يناسبكِ (اختياري)
-                  </p>
-                </div>
-                {formData.specialties.length > 0 && (
-                  <span className="bg-orange-500 text-white text-[11px] font-black px-2 py-1 rounded-full">
-                    {formData.specialties.length} مختار
-                  </span>
-                )}
-              </div>
-
-              {specialtyGroups.map((group) => (
-                <div key={group.title} className="mb-4 last:mb-0">
-                  <p className="text-[11px] font-bold text-stone-400 mb-2 flex items-center gap-1.5">
-                    <span className="w-1 h-1 bg-orange-400 rounded-full" />
-                    {group.title}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {group.items.map((specialty) => {
-                      const isSelected =
-                        formData.specialties.includes(specialty);
-                      return (
-                        <button
-                          key={specialty}
-                          type="button"
-                          onClick={() => toggleSpecialty(specialty)}
-                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
-                            isSelected
-                              ? 'bg-gradient-to-l from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30'
-                              : 'bg-stone-100 text-stone-700 hover:bg-orange-50'
-                          }`}
-                        >
-                          {isSelected && (
-                            <Check className="w-3 h-3" strokeWidth={3} />
-                          )}
-                          {specialty}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              <label className="flex items-center justify-between mb-2">
+                <span className="flex items-center gap-2 text-sm font-extrabold text-stone-800">
+                  <Sparkles className="w-4 h-4 text-orange-500" strokeWidth={2.4} />
+                  وصف نشاطك وأنواع الأطباق
+                </span>
+                <span className="text-[10px] text-stone-400 font-semibold">مطلوب</span>
+              </label>
+              <textarea
+                name="cookDescription"
+                value={formData.cookDescription || ''}
+                onChange={handleChange}
+                rows={4}
+                maxLength={500}
+                className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl text-sm text-stone-700 placeholder-stone-400 focus:outline-none focus:border-orange-400 focus:bg-white transition resize-none"
+                placeholder="مثلاً: أطبخ الكسكس والشخشوخة والمحاجب، متخصصة في الأكل التقليدي البشاري منذ 10 سنوات..."
+              />
+              <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
+                💡 وصف تفصيلي يساعد في قبول طلبك بسرعة أكبر
+              </p>
+              <p className="text-[11px] text-stone-400 mt-0.5 text-left">
+                {(formData.cookDescription || '').length}/500
+              </p>
             </div>
           </section>
         )}
@@ -477,8 +461,8 @@ const CookSignup = () => {
           <section className="animate-slide-up space-y-4">
             <StepHeader
               icon={Sparkles}
-              title="ملفكِ الشخصي"
-              subtitle="أضيفي صورتكِ وأعمالكِ (اختياري)"
+              title="الملف الشخصي"
+              subtitle="إضافة الصور والأعمال السابقة (اختياري)"
             />
 
             {/* الصورة الشخصية */}
@@ -624,8 +608,8 @@ const CookSignup = () => {
           <section className="animate-slide-up space-y-4">
             <StepHeader
               icon={Lock}
-              title="تأمين حسابكِ"
-              subtitle="اختاري كلمة مرور قوية"
+              title="تأمين الحساب"
+              subtitle="اختر كلمة مرور قوية"
             />
 
             <div className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 p-5 space-y-4">
@@ -743,10 +727,10 @@ const CookSignup = () => {
                       cookTypes.find((t) => t.value === formData.cookType)?.label
                     }
                   />
-                  {formData.specialties.length > 0 && (
+                 {formData.cookDescription && (
                     <SummaryRow
-                      label="التخصصات"
-                      value={`${formData.specialties.length} تخصص`}
+                      label="وصف النشاط"
+                      value={formData.cookDescription.length > 30 ? formData.cookDescription.slice(0, 30) + '...' : formData.cookDescription}
                     />
                   )}
                 </div>
@@ -805,7 +789,7 @@ const CookSignup = () => {
                   ) : (
                     <>
                       <Check className="w-4 h-4" strokeWidth={3} />
-                      إنشاء حسابي
+                       إنشاء الحساب
                     </>
                   )}
                 </button>
@@ -819,8 +803,8 @@ const CookSignup = () => {
                   to="/login"
                   className="text-[11px] text-stone-500 hover:text-orange-600 font-semibold active:scale-95 transition inline-flex items-center gap-1"
                 >
-                  عندكِ حساب بالفعل؟{' '}
-                  <span className="text-orange-600 font-black">سجّلي الدخول</span>
+                    لديك حساب بالفعل؟{' '}
+                  <span className="text-orange-600 font-black">تسجيل الدخول</span>
                 </Link>
               </div>
             )}

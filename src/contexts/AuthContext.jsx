@@ -46,11 +46,36 @@ export const AuthProvider = ({ children }) => {
 
   // تسجيل طباخة جديدة
   const signupCook = async (email, password, cookData) => {
-    // 1. إنشاء حساب في Firebase Auth
+    // التحقق من عدم تكرار رقم الهاتف
+    const { getDocs, query, where, collection } = await import('firebase/firestore');
+    const phoneQuery = query(
+      collection(db, 'cooks'),
+      where('phone', '==', cookData.phone)
+    );
+    const phoneSnap = await getDocs(phoneQuery);
+    if (!phoneSnap.empty) {
+      const error = new Error('رقم الهاتف مسجّل مسبقاً');
+      error.code = 'auth/phone-already-in-use';
+      throw error;
+    }
+
+    // التحقق من عدم تكرار الاسم
+    const nameQuery = query(
+      collection(db, 'cooks'),
+      where('name', '==', cookData.name.trim())
+    );
+    const nameSnap = await getDocs(nameQuery);
+    if (!nameSnap.empty) {
+      const error = new Error('هذا الاسم مسجّل مسبقاً');
+      error.code = 'auth/name-already-in-use';
+      throw error;
+    }
+
+    // إنشاء حساب في Firebase Auth
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
 
-    // 2. إنشاء وثيقة في cooks (status: pending) مع كل حقول الرصيد
+    // إنشاء وثيقة في cooks
     const cookRef = doc(db, 'cooks', user.uid);
     await setDoc(cookRef, {
       userId: user.uid,
@@ -59,17 +84,19 @@ export const AuthProvider = ({ children }) => {
       phone: cookData.phone,
       neighborhood: cookData.neighborhood,
       photo: cookData.photo || '',
+      cookType: cookData.cookType || 'home_cook',
+      specialties: cookData.specialties || [],
+      cookDescription: cookData.cookDescription || '',
+      socialLink: cookData.socialLink || '',
+      portfolioImages: cookData.portfolioImages || [],
       status: 'pending',
       rating: 0,
-      // 💰 إعدادات الرصيد والعمولة
       balance: 0,
       totalCommission: 0,
       totalOrders: 0,
-      // ⭐ إعدادات التقييم
       totalRatings: 0,
       averageRating: 0,
       ratingSum: 0,
-      // 🎁 عضو مؤسس (يُحدّد عند القبول)
       isFoundingMember: false,
       foundingMemberNumber: null,
       freeOrdersRemaining: 0,
@@ -77,7 +104,7 @@ export const AuthProvider = ({ children }) => {
       createdAt: serverTimestamp(),
     });
 
-    // 3. إنشاء وثيقة في users
+    // إنشاء وثيقة في users
     const userProfileData = {
       uid: user.uid,
       email: user.email,

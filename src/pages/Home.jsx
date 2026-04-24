@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   ChefHat,
-  ShoppingBag,
   Star,
   Search,
   MapPin,
-  Flame,
-  Clock,
-  Sparkles,
   ArrowLeft,
   Heart,
-  Utensils,
-  TrendingUp,
+  Shield,
+  Award,
+  Quote,
+  Sparkles,
 } from 'lucide-react';
 
 function Home() {
+  const navigate = useNavigate();
   const [availableCooks, setAvailableCooks] = useState([]);
   const [topCooks, setTopCooks] = useState([]);
-  const [popularDishes, setPopularDishes] = useState([]);
+  const [featuredCook, setFeaturedCook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -30,43 +29,44 @@ function Home() {
         const cooksSnapshot = await getDocs(collection(db, 'cooks'));
         const allCooks = cooksSnapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((c) => c.status === 'approved' || (c.isActive !== false && !c.status));
+          .filter(
+            (c) => c.status === 'approved' || (c.isActive !== false && !c.status)
+          );
 
         const dishesSnapshot = await getDocs(
           query(collection(db, 'dishes'), where('available', '==', true))
         );
-        const availableDishes = dishesSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const availableDishes = dishesSnapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }));
 
         const cooksWithDishes = allCooks.map((cook) => {
           const dishes = availableDishes.filter((d) => d.cookId === cook.id);
           return { ...cook, availableDishes: dishes };
         });
 
+        // طباخات متاحات
         const available = cooksWithDishes
           .filter((c) => c.availableDishes.length > 0)
-          .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
-          .slice(0, 8);
+          .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
 
+        // الأعلى تقييماً (أكثر من 0 تقييم)
         const top = cooksWithDishes
-          .sort((a, b) => {
-            const ratingDiff = (b.averageRating || 0) - (a.averageRating || 0);
-            if (ratingDiff !== 0) return ratingDiff;
-            return (b.totalOrders || 0) - (a.totalOrders || 0);
-          })
-          .slice(0, 4);
-
-        // الأطباق الشعبية (متاحة + أعلى سعر أو عشوائية)
-        const popular = availableDishes
-          .map((dish) => {
-            const cook = allCooks.find((c) => c.id === dish.cookId);
-            return { ...dish, cook };
-          })
-          .filter((d) => d.cook)
+          .filter((c) => (c.totalRatings || 0) > 0)
+          .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
           .slice(0, 6);
+
+        // طباخة مميّزة (لها bio حقيقي)
+        const featured = cooksWithDishes
+          .filter(
+            (c) => c.bio && c.bio.length > 20 && c.availableDishes.length > 0
+          )
+          .sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))[0];
 
         setAvailableCooks(available);
         setTopCooks(top);
-        setPopularDishes(popular);
+        setFeaturedCook(featured);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -81,375 +81,351 @@ function Home() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // يمكن توجيهه لصفحة الطباخات مع query
     if (searchQuery.trim()) {
-      window.location.href = `/cooks?q=${encodeURIComponent(searchQuery)}`;
+      navigate(`/cooks?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/cooks');
     }
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
+    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-28 md:pb-8">
       {/* ============================================ */}
-      {/* Hero Section - مدمج ومختصر */}
+      {/* Hero مختصر - شريط بحث أولاً */}
       {/* ============================================ */}
-      <section className="relative overflow-hidden">
-        {/* الخلفية المتدرجة */}
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-500 via-orange-600 to-orange-500" />
+      <section className="relative overflow-hidden pt-4 pb-6">
+        {/* خلفية كريمية ناعمة */}
+        <div className="absolute top-0 right-0 w-56 h-56 bg-orange-200/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-0 w-56 h-56 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
 
-        {/* زخارف خلفية */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-orange-400/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-60 h-60 bg-orange-700/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-          backgroundSize: '24px 24px'
-        }} />
-
-        <div className="relative max-w-6xl mx-auto px-4 pt-6 pb-24 text-white">
-          {/* شارة ترحيبية */}
-          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold mb-4 border border-white/20">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
-            </span>
-            طباخات في مطابخهن الآن
+        <div className="relative max-w-5xl mx-auto px-4">
+          {/* شارة صغيرة */}
+          <div className="flex items-center justify-center mb-3">
+            <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-orange-200/60 px-3 py-1.5 rounded-full text-xs font-bold text-orange-800 shadow-sm">
+              <Heart className="w-3 h-3 fill-orange-500 text-orange-500" />
+              أكل بيت حقيقي من بشار
+            </div>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black mb-2 leading-tight">
-            أكل بيت من قلب
-            <br />
-            <span className="relative inline-block">
-              بشار
-              <span className="absolute bottom-1 right-0 w-full h-1.5 bg-yellow-300/70 rounded-full -z-10" />
-            </span>
-            {' '}
-            <span className="inline-block animate-gentle-bounce">🍲</span>
+          {/* عنوان مختصر */}
+          <h1 className="text-center text-2xl md:text-3xl font-black text-stone-800 mb-4 leading-tight">
+            ماذا تشتهين
+            <span className="text-orange-600 mx-1">اليوم؟</span>
           </h1>
-          <p className="text-white/90 text-sm md:text-base mb-6 max-w-md">
-            طباخات موثوقات، وجبات دافئة، وصلاتك بسرعة
-          </p>
 
           {/* شريط البحث */}
-          <form onSubmit={handleSearch} className="relative max-w-xl">
-            <div className="relative bg-white rounded-2xl shadow-xl shadow-orange-900/20 flex items-center overflow-hidden">
-              <Search className="absolute right-4 w-5 h-5 text-stone-400" strokeWidth={2.2} />
+          <form onSubmit={handleSearch} className="relative max-w-xl mx-auto">
+            <div className="relative bg-white rounded-2xl shadow-lg shadow-orange-900/10 border border-orange-100 flex items-center overflow-hidden">
+              <Search
+                className="absolute right-4 w-5 h-5 text-stone-400"
+                strokeWidth={2.2}
+              />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن طباخة أو طبق..."
-                className="w-full py-4 pr-12 pl-28 text-stone-700 placeholder-stone-400 focus:outline-none text-sm font-medium"
+                placeholder="ابحثي عن طباخة، حي، أو طبق..."
+                className="w-full py-4 pr-12 pl-24 bg-transparent text-stone-700 placeholder-stone-400 focus:outline-none text-sm font-medium"
               />
               <button
                 type="submit"
-                className="absolute left-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-all"
+                className="absolute left-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-xl text-sm font-extrabold active:scale-95 transition-all shadow-md shadow-orange-500/30"
               >
-                بحث
+                ابحثي
               </button>
             </div>
           </form>
-        </div>
 
-        {/* منحنى سفلي للـ hero */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-[#FFF8F0] rounded-t-[2rem]" />
-      </section>
-
-      {/* ============================================ */}
-      {/* شريط الإحصائيات السريعة */}
-      {/* ============================================ */}
-      <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-10 mb-8">
-        <div className="bg-white rounded-3xl shadow-lg shadow-orange-200/40 p-4 grid grid-cols-3 gap-2">
-          <StatBox
-            icon={ChefHat}
-            value={availableCooks.length || '...'}
-            label="طباخة متاحة"
-            color="orange"
-          />
-          <div className="border-r border-l border-stone-100" />
-          <StatBox
-            icon={Utensils}
-            value={popularDishes.length || '...'}
-            label="طبق جاهز"
-            color="amber"
-          />
-          <div className="border-r border-stone-100" />
-          <StatBox
-            icon={Clock}
-            value="30د"
-            label="متوسط التوصيل"
-            color="green"
-          />
+          {/* شارات الثقة - أفقية ومختصرة */}
+          <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+            <TrustChip icon={Shield} label="موثوقات" />
+            <TrustChip icon={Award} label="جودة" />
+            <TrustChip icon={Heart} label="بحب" />
+          </div>
         </div>
       </section>
 
       {/* ============================================ */}
-      {/* التصنيفات السريعة - دائرية */}
+      {/* القسم البطل: طباخات متاحات الآن */}
       {/* ============================================ */}
-      <section className="max-w-6xl mx-auto px-4 mb-8">
-        <div className="grid grid-cols-4 gap-3">
-          <CategoryChip emoji="🍲" label="أطباق" to="/cooks" />
-          <CategoryChip emoji="👩‍🍳" label="طباخات" to="/cooks" />
-          <CategoryChip emoji="🥘" label="تقليدي" to="/cooks" />
-          <CategoryChip emoji="🍰" label="حلويات" to="/cooks" />
-        </div>
-      </section>
-
-      {/* ============================================ */}
-      {/* قسم "متاح الآن" - تمرير أفقي */}
-      {/* ============================================ */}
-      <section className="mb-8">
+      <section className="max-w-5xl mx-auto px-4 mb-8">
         <SectionHeader
-          icon={Flame}
-          title="متاح الآن"
+          title="متاحات الآن"
           subtitle="طباخات يطبخن في هذه اللحظة"
+          dotColor="bg-green-500"
           link="/cooks"
-          iconColor="text-red-500"
-          badge
         />
 
         {loading ? (
-          <HorizontalSkeleton />
+          <CooksGridSkeleton />
         ) : availableCooks.length === 0 ? (
-          <EmptyState message="لا توجد طباخات متاحات حالياً" />
+          <EmptyState
+            icon="😴"
+            title="لا توجد طباخات متاحات الآن"
+            subtitle="عودي قريباً — الطباخات ينضممن طوال اليوم"
+          />
         ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {availableCooks.slice(0, 8).map((cook, idx) => (
+              <AvailableCookCard
+                key={cook.id}
+                cook={cook}
+                idx={idx}
+                getCookImage={getCookImage}
+                getDishImage={getDishImage}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* زر "شاهدي الكل" إذا في أكثر من 8 */}
+        {availableCooks.length > 8 && (
+          <Link
+            to="/cooks"
+            className="flex items-center justify-center gap-2 mt-4 bg-white hover:bg-orange-50 text-orange-600 py-3 rounded-2xl font-bold text-sm border-2 border-dashed border-orange-300 active:scale-[0.98] transition-all"
+          >
+            <Sparkles className="w-4 h-4" strokeWidth={2.4} />
+            شاهدي كل الطباخات ({availableCooks.length})
+          </Link>
+        )}
+      </section>
+
+      {/* ============================================ */}
+      {/* طباخة اليوم - حكاية */}
+      {/* ============================================ */}
+      {featuredCook && (
+        <section className="max-w-5xl mx-auto px-4 mb-8">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <div className="w-1.5 h-5 bg-amber-500 rounded-full" />
+            <h2 className="text-lg font-extrabold text-stone-800">
+              طباخة نوصيكِ بها
+            </h2>
+          </div>
+
+          <Link
+            to={`/cooks/${featuredCook.id}`}
+            className="relative block bg-white rounded-3xl overflow-hidden shadow-md shadow-orange-200/30 active:scale-[0.99] transition-transform group"
+          >
+            <div className="flex flex-col sm:flex-row">
+              {/* الصورة */}
+<div className="relative w-full sm:w-56 h-64 sm:h-auto flex-shrink-0">                {getCookImage(featuredCook) ? (
+                  <img
+                    src={getCookImage(featuredCook)}
+                    alt={featuredCook.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-6xl">
+                    👩‍🍳
+                  </div>
+                )}
+                {/* شارة */}
+                <div className="absolute top-3 right-3">
+                  <span className="inline-flex items-center gap-1 bg-gradient-to-l from-amber-400 to-amber-500 text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-md">
+                    <Award className="w-3 h-3" strokeWidth={2.5} />
+                    مميّزة
+                  </span>
+                </div>
+              </div>
+
+              {/* المحتوى */}
+              <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                <div>
+                  {/* الاسم + التقييم */}
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h3 className="text-xl font-black text-stone-800">
+                      {featuredCook.name}
+                    </h3>
+                    {featuredCook.totalRatings > 0 && (
+                      <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full text-xs font-bold">
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                        {featuredCook.averageRating.toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+
+                  {featuredCook.neighborhood && (
+                    <p className="text-xs text-stone-500 flex items-center gap-1 mb-3">
+                      <MapPin className="w-3 h-3" />
+                      {featuredCook.neighborhood}
+                    </p>
+                  )}
+
+                  {/* Quote Bio */}
+                  <div className="relative pr-4">
+                    <Quote
+                      className="absolute top-0 right-0 w-4 h-4 text-orange-300 scale-x-[-1]"
+                      strokeWidth={2.5}
+                    />
+                    <p className="text-sm text-stone-700 leading-relaxed italic line-clamp-3">
+                      {featuredCook.bio}
+                    </p>
+                  </div>
+                </div>
+
+                {/* الأسفل */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone-100">
+                  <span className="text-xs font-bold text-stone-600">
+                    🍽️ {featuredCook.availableDishes.length} أطباق متاحة
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-orange-600 font-extrabold text-xs group-hover:gap-2 transition-all">
+                    زيارة الملف
+                    <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.8} />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </section>
+      )}
+
+      {/* ============================================ */}
+      {/* الأعلى تقييماً - تمرير أفقي */}
+      {/* ============================================ */}
+      {!loading && topCooks.length > 0 && (
+        <section className="mb-8">
+          <div className="max-w-5xl mx-auto px-4 mb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Star
+                  className="w-5 h-5 text-amber-500 fill-amber-500"
+                  strokeWidth={2.4}
+                />
+                <h2 className="text-lg font-extrabold text-stone-800">
+                  الأعلى تقييماً
+                </h2>
+              </div>
+              <Link
+                to="/cooks"
+                className="text-xs font-extrabold text-orange-600 flex items-center gap-0.5 active:scale-95 transition"
+              >
+                الكل
+                <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.8} />
+              </Link>
+            </div>
+          </div>
+
           <div className="overflow-x-auto no-scrollbar snap-x-padded">
-            <div className="flex gap-4 px-4 pb-2">
-              {availableCooks.map((cook, idx) => (
+            <div className="flex gap-3 px-4 pb-2">
+              {topCooks.map((cook, idx) => (
                 <Link
                   key={cook.id}
                   to={`/cooks/${cook.id}`}
                   style={{ animationDelay: `${idx * 60}ms` }}
-                  className="animate-slide-up flex-shrink-0 w-[280px] bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl active:scale-[0.98] transition-all group"
+                  className="animate-slide-up flex-shrink-0 w-36 active:scale-95 transition-all group"
                 >
-                  {/* الصورة */}
-                  <div className="relative h-40 overflow-hidden">
+                  <div className="relative aspect-square rounded-2xl overflow-hidden shadow-sm mb-2">
                     {getCookImage(cook) ? (
                       <img
                         src={getCookImage(cook)}
                         alt={cook.name}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-orange-200 via-amber-200 to-orange-300 flex items-center justify-center text-6xl">
+                      <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-200 flex items-center justify-center text-5xl">
                         👩‍🍳
                       </div>
                     )}
-
-                    {/* تدرج علوي لقراءة النص */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
-
-                    {/* شارة متاحة الآن */}
-                    <div className="absolute top-3 right-3 bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 shadow-lg">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
-                      </span>
-                      متاحة
+                    {/* ترتيب */}
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center text-[11px] font-black text-amber-600 shadow-md">
+                      {idx + 1}
                     </div>
-
-                    {/* التقييم */}
-                    {cook.totalRatings > 0 && (
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        {cook.averageRating.toFixed(1)}
-                      </div>
-                    )}
-
-                    {/* الاسم على الصورة */}
-                    <div className="absolute bottom-3 right-3 left-3">
-                      <h3 className="text-white font-extrabold text-lg drop-shadow-md truncate">
-                        {cook.name}
-                      </h3>
-                      {cook.neighborhood && (
-                        <p className="text-white/90 text-xs flex items-center gap-1 drop-shadow">
-                          <MapPin className="w-3 h-3" />
-                          {cook.neighborhood}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* معلومات الأطباق */}
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-stone-500">
-                        🍽️ {cook.availableDishes.length} أطباق
-                      </span>
-                      <span className="text-xs font-bold text-orange-600 flex items-center gap-0.5">
-                        اطلب
-                        <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
-                      </span>
-                    </div>
-
-                    {/* معاينة طبق */}
-                    {cook.availableDishes[0] && (
-                      <div className="flex items-center gap-2 bg-orange-50 rounded-xl p-2">
-                        {getDishImage(cook.availableDishes[0]) ? (
-                          <img
-                            src={getDishImage(cook.availableDishes[0])}
-                            alt={cook.availableDishes[0].name}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 bg-orange-200 rounded-lg flex items-center justify-center text-base">
-                            🍽️
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-stone-700 truncate">
-                            {cook.availableDishes[0].name}
-                          </p>
-                          <p className="text-xs font-bold text-orange-600">
-                            {cook.availableDishes[0].price} دج
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* ============================================ */}
-      {/* أفضل الطباخات - شبكة عمودية */}
-      {/* ============================================ */}
-      {!loading && topCooks.length > 0 && (
-        <section className="max-w-6xl mx-auto px-4 mb-8">
-          <SectionHeader
-            icon={TrendingUp}
-            title="الأكثر طلباً"
-            subtitle="الأعلى تقييماً من الزبائن"
-            link="/cooks"
-            iconColor="text-orange-500"
-            inline
-          />
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            {topCooks.map((cook, idx) => (
-              <Link
-                key={cook.id}
-                to={`/cooks/${cook.id}`}
-                style={{ animationDelay: `${idx * 80}ms` }}
-                className="animate-slide-up bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl active:scale-[0.97] transition-all group"
-              >
-                <div className="relative aspect-square overflow-hidden">
-                  {getCookImage(cook) ? (
-                    <img
-                      src={getCookImage(cook)}
-                      alt={cook.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-200 via-amber-200 to-orange-300 flex items-center justify-center text-6xl">
-                      👩‍🍳
-                    </div>
-                  )}
-
-                  {/* ترتيب */}
-                  <div className="absolute top-2 right-2 w-7 h-7 bg-white/95 backdrop-blur rounded-full flex items-center justify-center text-xs font-black text-orange-600 shadow-md">
-                    #{idx + 1}
-                  </div>
-
-                  {cook.totalRatings > 0 && (
-                    <div className="absolute bottom-2 right-2 left-2 bg-black/60 backdrop-blur text-white px-2 py-1 rounded-lg flex items-center justify-center gap-1 text-xs font-bold">
+                    {/* تدرج سفلي */}
+                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/70 to-transparent" />
+                    {/* تقييم */}
+                    <div className="absolute bottom-1.5 right-1.5 left-1.5 flex items-center justify-center gap-1 text-white text-xs font-bold">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                       {cook.averageRating.toFixed(1)}
-                      <span className="text-white/70">({cook.totalRatings})</span>
+                      <span className="text-white/70 text-[10px]">
+                        ({cook.totalRatings})
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                <div className="p-3">
-                  <h3 className="font-extrabold text-stone-800 truncate text-sm">
+                  </div>
+                  <h3 className="font-extrabold text-stone-800 text-sm text-center truncate">
                     {cook.name}
                   </h3>
                   {cook.neighborhood && (
-                    <p className="text-[11px] text-stone-500 mt-0.5 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      <span className="truncate">{cook.neighborhood}</span>
+                    <p className="text-[10px] text-stone-500 text-center truncate mt-0.5">
+                      {cook.neighborhood}
                     </p>
                   )}
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* ============================================ */}
-      {/* كيف يعمل - بطاقات أفقية */}
+      {/* CTA - دعوة هادئة للطباخات */}
       {/* ============================================ */}
-      <section className="max-w-6xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Sparkles className="w-5 h-5 text-orange-500" />
-          <h2 className="text-lg font-extrabold text-stone-800">كيف يعمل؟</h2>
-        </div>
-
-        <div className="bg-white rounded-3xl p-5 shadow-sm">
-          <div className="space-y-4">
-            <Step num="1" icon={ChefHat} title="اختر الطباخة" desc="تصفح الطباخات في بشار" />
-            <div className="border-b border-dashed border-stone-200" />
-            <Step num="2" icon={Utensils} title="اختر وجبتك" desc="شاهد الأطباق المتاحة" />
-            <div className="border-b border-dashed border-stone-200" />
-            <Step num="3" icon={ShoppingBag} title="اطلب مباشرة" desc="أكّد الطلب واستلمه بسرعة" />
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================ */}
-      {/* CTA - انضمي كطباخة */}
-      {/* ============================================ */}
-      <section className="max-w-6xl mx-auto px-4 mb-4">
+      <section className="max-w-5xl mx-auto px-4 mb-6">
         <Link
           to="/cook/signup"
-          className="relative block bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 rounded-3xl overflow-hidden p-6 text-white shadow-xl shadow-orange-500/30 active:scale-[0.98] transition-transform"
+          className="relative block bg-gradient-to-bl from-amber-50 via-orange-50 to-amber-100 rounded-3xl overflow-hidden p-5 border border-amber-200/60 shadow-sm active:scale-[0.99] transition-transform group"
         >
-          {/* زخارف */}
-          <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-yellow-400/20 rounded-full blur-2xl" />
-          <div className="absolute top-4 left-4 text-6xl opacity-20">👩‍🍳</div>
+          <div className="absolute -top-6 -left-6 w-24 h-24 bg-amber-300/40 rounded-full blur-2xl" />
+          <div className="absolute -bottom-6 -right-6 w-28 h-28 bg-orange-300/30 rounded-full blur-2xl" />
 
-          <div className="relative">
-            <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur px-2.5 py-1 rounded-full text-[11px] font-bold mb-3">
-              <Heart className="w-3 h-3 fill-white" />
-              انضمي لعائلتنا
+          <div className="relative flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <ChefHat
+                  className="w-6 h-6 text-orange-600"
+                  strokeWidth={2.2}
+                />
+              </div>
             </div>
-            <h3 className="text-2xl font-black mb-1">هل أنتِ طباخة موهوبة؟</h3>
-            <p className="text-white/90 text-sm mb-4 max-w-xs">
-              ابدئي ببيع أكلك المنزلي اليوم واربحي من شغفك
-            </p>
-            <span className="inline-flex items-center gap-2 bg-white text-orange-600 px-5 py-2.5 rounded-xl text-sm font-extrabold shadow-lg">
-              سجّلي الآن
-              <ArrowLeft className="w-4 h-4" strokeWidth={2.8} />
-            </span>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-black text-stone-800 leading-tight mb-0.5">
+                هل أنتِ طباخة؟
+              </h3>
+              <p className="text-[11px] text-stone-600">
+                انضمّي إلى نَكهة وشاركي أكلكِ مع الحي
+              </p>
+            </div>
+            <ArrowLeft
+              className="w-5 h-5 text-orange-600 group-hover:-translate-x-1 transition-transform flex-shrink-0"
+              strokeWidth={2.8}
+            />
           </div>
         </Link>
       </section>
 
       {/* ============================================ */}
-      {/* Footer بسيط */}
+      {/* Footer */}
       {/* ============================================ */}
-      <footer className="max-w-6xl mx-auto px-4 pt-6 pb-4 text-center">
+      <footer className="max-w-5xl mx-auto px-4 pt-6 pb-4 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-            <ChefHat className="w-4 h-4 text-white" />
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-sm">
+            <ChefHat className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-extrabold text-stone-700">نَكهة</span>
+          <span className="font-black text-stone-800 text-sm">نَكهة</span>
         </div>
-        <p className="text-xs text-stone-500">© 2026 • أكل بيتي في بشار 🇩🇿</p>
-        <div className="flex items-center justify-center gap-4 mt-3 text-xs">
-          <Link to="/about" className="text-stone-600 hover:text-orange-600 font-semibold">
+        <p className="text-[11px] text-stone-500 mb-2">
+          أكل بيتي في بشار 🇩🇿
+        </p>
+        <div className="flex items-center justify-center gap-3 text-[11px]">
+          <Link
+            to="/about"
+            className="text-stone-600 hover:text-orange-600 font-bold"
+          >
             عنّا
           </Link>
           <span className="text-stone-300">•</span>
-          <Link to="/privacy" className="text-stone-600 hover:text-orange-600 font-semibold">
+          <Link
+            to="/privacy"
+            className="text-stone-600 hover:text-orange-600 font-bold"
+          >
             الخصوصية
           </Link>
         </div>
+        <p className="text-[10px] text-stone-400 mt-3">
+          © 2026 • صُنع بـ{' '}
+          <Heart className="w-3 h-3 inline fill-red-400 text-red-400" /> في
+          الجزائر
+        </p>
       </footer>
     </div>
   );
@@ -459,96 +435,147 @@ function Home() {
 /* مكوّنات مساعدة */
 /* ============================================ */
 
-function StatBox({ icon: Icon, value, label, color }) {
-  const colors = {
-    orange: 'bg-orange-100 text-orange-600',
-    amber: 'bg-amber-100 text-amber-600',
-    green: 'bg-green-100 text-green-600',
-  };
+function TrustChip({ icon: Icon, label }) {
   return (
-    <div className="flex flex-col items-center justify-center py-2 px-1">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 ${colors[color]}`}>
-        <Icon className="w-5 h-5" strokeWidth={2.2} />
-      </div>
-      <p className="text-base font-black text-stone-800 leading-none">{value}</p>
-      <p className="text-[10px] text-stone-500 font-semibold mt-1 text-center">{label}</p>
+    <div className="inline-flex items-center gap-1 bg-white/70 border border-stone-200/80 px-2.5 py-1 rounded-full text-[11px] font-bold text-stone-700 shadow-sm">
+      <Icon className="w-3 h-3 text-orange-500" strokeWidth={2.4} />
+      {label}
     </div>
   );
 }
 
-function CategoryChip({ emoji, label, to }) {
+function SectionHeader({ title, subtitle, dotColor, link }) {
   return (
-    <Link
-      to={to}
-      className="flex flex-col items-center gap-1.5 active:scale-90 transition-transform"
-    >
-      <div className="w-16 h-16 bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-sm hover:shadow-md flex items-center justify-center text-3xl border border-orange-100">
-        {emoji}
-      </div>
-      <span className="text-xs font-bold text-stone-700">{label}</span>
-    </Link>
-  );
-}
-
-function SectionHeader({ icon: Icon, title, subtitle, link, iconColor, badge, inline }) {
-  return (
-    <div className={`${inline ? '' : 'max-w-6xl mx-auto px-4'} flex items-end justify-between mb-4`}>
+    <div className="flex items-end justify-between mb-3 px-1">
       <div>
         <div className="flex items-center gap-2 mb-0.5">
-          <div className="relative">
-            <Icon className={`w-5 h-5 ${iconColor}`} strokeWidth={2.4} />
-            {badge && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            )}
-          </div>
-          <h2 className="text-xl font-extrabold text-stone-800">{title}</h2>
+          {dotColor && (
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${dotColor}`}
+              />
+            </span>
+          )}
+          <h2 className="text-lg font-extrabold text-stone-800 leading-none">
+            {title}
+          </h2>
         </div>
-        <p className="text-xs text-stone-500 pr-7">{subtitle}</p>
+        <p className="text-[11px] text-stone-500 mt-1">{subtitle}</p>
       </div>
       {link && (
         <Link
           to={link}
-          className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 active:scale-95 transition"
+          className="text-xs font-extrabold text-orange-600 flex items-center gap-0.5 active:scale-95 transition"
         >
           الكل
-          <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.5} />
+          <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.8} />
         </Link>
       )}
     </div>
   );
 }
 
-function Step({ num, icon: Icon, title, desc }) {
+function AvailableCookCard({ cook, idx, getCookImage, getDishImage }) {
+  const firstDish = cook.availableDishes[0];
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative flex-shrink-0">
-        <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-200 rounded-2xl flex items-center justify-center">
-          <Icon className="w-5 h-5 text-orange-600" strokeWidth={2.3} />
+    <Link
+      to={`/cooks/${cook.id}`}
+      style={{ animationDelay: `${idx * 50}ms` }}
+      className="animate-slide-up bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl active:scale-[0.97] transition-all group"
+    >
+      <div className="relative aspect-[4/5] overflow-hidden">
+        {getCookImage(cook) ? (
+          <img
+            src={getCookImage(cook)}
+            alt={cook.name}
+            loading="lazy"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200 flex items-center justify-center text-6xl">
+            👩‍🍳
+          </div>
+        )}
+
+        {/* شارة متاحة */}
+        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1 shadow-md">
+          <span className="relative flex h-1 w-1">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+            <span className="relative inline-flex rounded-full h-1 w-1 bg-white" />
+          </span>
+          متاحة
         </div>
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-md">
-          {num}
+
+        {/* تقييم */}
+        {cook.totalRatings > 0 && (
+          <div className="absolute top-2 left-2 bg-white/95 backdrop-blur px-1.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-0.5">
+            <Star className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
+            {cook.averageRating.toFixed(1)}
+          </div>
+        )}
+
+        {/* تدرج + معلومات سفلية */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
+        <div className="absolute bottom-2 right-2 left-2">
+          <h3 className="text-white font-extrabold text-sm drop-shadow-md truncate">
+            {cook.name}
+          </h3>
+          {cook.neighborhood && (
+            <p className="text-white/85 text-[10px] font-bold truncate mt-0.5">
+              📍 {cook.neighborhood}
+            </p>
+          )}
         </div>
       </div>
-      <div className="flex-1">
-        <h3 className="font-bold text-stone-800 text-sm">{title}</h3>
-        <p className="text-xs text-stone-500">{desc}</p>
-      </div>
-    </div>
+
+      {/* شريط طبق اليوم */}
+      {firstDish && (
+        <div className="p-2.5 border-t border-stone-100">
+          <div className="flex items-center gap-2">
+            {getDishImage(firstDish) ? (
+              <img
+                src={getDishImage(firstDish)}
+                alt={firstDish.name}
+                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center text-sm flex-shrink-0">
+                🍽️
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-extrabold text-stone-800 truncate">
+                {firstDish.name}
+              </p>
+              <p className="text-[10px] font-bold text-orange-600">
+                {firstDish.price} دج
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </Link>
   );
 }
 
-function HorizontalSkeleton() {
+function CooksGridSkeleton() {
   return (
-    <div className="flex gap-4 px-4 overflow-hidden">
-      {[1, 2, 3].map((i) => (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="flex-shrink-0 w-[280px] bg-white rounded-3xl overflow-hidden shadow-sm"
+          className="bg-white rounded-3xl overflow-hidden shadow-sm"
         >
-          <div className="h-40 animate-shimmer" />
-          <div className="p-3 space-y-2">
-            <div className="h-4 w-2/3 animate-shimmer rounded-md" />
-            <div className="h-10 animate-shimmer rounded-xl" />
+          <div className="aspect-[4/5] animate-shimmer" />
+          <div className="p-2.5 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg animate-shimmer flex-shrink-0" />
+            <div className="flex-1 space-y-1">
+              <div className="h-3 animate-shimmer rounded-md" />
+              <div className="h-2 w-1/2 animate-shimmer rounded-md" />
+            </div>
           </div>
         </div>
       ))}
@@ -556,11 +583,12 @@ function HorizontalSkeleton() {
   );
 }
 
-function EmptyState({ message }) {
+function EmptyState({ icon, title, subtitle }) {
   return (
-    <div className="mx-4 bg-white rounded-3xl p-8 text-center shadow-sm">
-      <div className="text-5xl mb-2">😴</div>
-      <p className="text-sm text-stone-500 font-semibold">{message}</p>
+    <div className="bg-white rounded-3xl p-8 text-center shadow-sm">
+      <div className="text-5xl mb-2">{icon}</div>
+      <h3 className="text-sm font-extrabold text-stone-800 mb-1">{title}</h3>
+      <p className="text-xs text-stone-500">{subtitle}</p>
     </div>
   );
 }
