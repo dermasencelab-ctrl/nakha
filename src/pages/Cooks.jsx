@@ -18,13 +18,13 @@ import {
 } from 'lucide-react';
 import CookCard from '../components/CookCard';
 
-// أنواع الطباخات للفلترة
+// أنواع الطباخات للفلترة — حلويات ثاني خيار بعد الكل
 const cookTypeFilters = [
-  { value: 'all', label: 'الكل', emoji: '👩‍🍳' },
-  { value: 'home_cook', label: 'طباخة حرة', emoji: '🏠' },
-  { value: 'traditional', label: 'تقليدي', emoji: '🍲' },
-  { value: 'pastry', label: 'حلويات', emoji: '🍰' },
-  { value: 'healthy', label: 'صحي', emoji: '🥗' },
+  { value: 'all',        label: 'الكل',       emoji: '👩‍🍳' },
+  { value: 'pastry',     label: 'حلويات',     emoji: '🍰' },
+  { value: 'traditional',label: 'تقليدي',    emoji: '🍲' },
+  { value: 'home_cook',  label: 'طباخة حرة', emoji: '🏠' },
+  { value: 'healthy',    label: 'صحي',        emoji: '🥗' },
 ];
 
 const statusFilters = [
@@ -46,7 +46,7 @@ function Cooks() {
   const [cooks, setCooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState(searchParams.get('type') || 'all');
   const [sortBy, setSortBy] = useState('rating');
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [sortSheetOpen, setSortSheetOpen] = useState(false);

@@ -26,15 +26,16 @@ const CookDishes = () => {
     available: true,
   });
 
-  // الفئات المحسّنة
+  // الفئات — الحلويات ثاني فئة بعد الطبق الرئيسي
   const categories = [
     { value: 'plat_principal', label: '🍲 طبق رئيسي' },
-    { value: 'entree', label: '🥗 مقبلات وسلطات' },
-    { value: 'patisserie', label: '🍰 حلويات تقليدية' },
-    { value: 'boulangerie', label: '🍞 خبز ومعجنات' },
-    { value: 'boisson', label: '🥤 مشروبات وعصائر' },
-    { value: 'sauce', label: '🫙 صلصات ومرافقات' },
-    { value: 'autre', label: '🍽️ أخرى' },
+    { value: 'patisserie',     label: '🍰 حلويات تقليدية' },
+    { value: 'gateau',         label: '🧁 كيك ومعجنات' },
+    { value: 'entree',         label: '🥗 مقبلات وسلطات' },
+    { value: 'boulangerie',    label: '🍞 خبز ومعجنات' },
+    { value: 'boisson',        label: '🥤 مشروبات وعصائر' },
+    { value: 'sauce',          label: '🫙 صلصات ومرافقات' },
+    { value: 'autre',          label: '🍽️ أخرى' },
   ];
 
   // وحدات القياس

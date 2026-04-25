@@ -15,6 +15,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+// تصنيفات الاكتشاف السريع — تنقل للفلتر المناسب في صفحة الطباخات
+const DISH_CATEGORIES = [
+  { id: 'pastry',      emoji: '🍰', label: 'حلويات',        path: '/cooks?type=pastry'      },
+  { id: 'gateau',      emoji: '🍪', label: 'معجنات',         path: '/cooks?type=pastry'      },
+  { id: 'traditional', emoji: '🍲', label: 'أطباق رئيسية', path: '/cooks?type=traditional' },
+  { id: 'healthy',     emoji: '🥗', label: 'سلطات',          path: '/cooks?type=healthy'     },
+  { id: 'drinks',      emoji: '🥤', label: 'مشروبات',        path: '/cooks'                  },
+];
+
 // Module-level pure helpers — stable references, no re-creation on render
 const getCookImage = (cook) => cook?.photo || cook?.image || '';
 const getDishImage = (dish) => dish?.photo || dish?.image || '';
@@ -144,6 +153,32 @@ function Home() {
               </button>
             </div>
           </form>
+
+          {/* شريط التصنيفات الأفقي */}
+          <div className="overflow-x-auto no-scrollbar -mx-4 px-4 mt-5">
+            <div className="flex gap-4 pb-1 w-max mx-auto">
+              {DISH_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => navigate(cat.path)}
+                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group active:scale-90 transition-transform"
+                >
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-md shadow-orange-900/10 transition-colors ${
+                    cat.id === 'pastry'
+                      ? 'bg-orange-100 border-2 border-orange-200'
+                      : 'bg-white border border-stone-100'
+                  }`}>
+                    {cat.emoji}
+                  </div>
+                  <span className={`text-[10px] font-extrabold ${
+                    cat.id === 'pastry' ? 'text-orange-600' : 'text-stone-600'
+                  }`}>
+                    {cat.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* شارات الثقة - أفقية ومختصرة */}
           <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">

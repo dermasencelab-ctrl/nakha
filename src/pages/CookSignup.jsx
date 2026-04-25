@@ -442,7 +442,7 @@ const CookSignup = () => {
                 rows={4}
                 maxLength={500}
                 className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl text-sm text-stone-700 placeholder-stone-400 focus:outline-none focus:border-orange-400 focus:bg-white transition resize-none"
-                placeholder="مثلاً: أطبخ الكسكس والشخشوخة والمحاجب، متخصصة في الأكل التقليدي البشاري منذ 10 سنوات..."
+                placeholder="مثلاً: أحضّر الحلويات التقليدية والمعجنات، أو أطبخ الكسكس والأطباق المنزلية..."
               />
               <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
                 💡 وصف تفصيلي يساعد في قبول طلبك بسرعة أكبر
