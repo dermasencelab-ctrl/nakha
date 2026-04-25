@@ -291,7 +291,14 @@ const Privacy = () => {
       {/* روابط الأسفل */}
       {/* ============================================ */}
       <section className="max-w-3xl mx-auto px-4 text-center">
-        <div className="flex items-center justify-center gap-3 text-[11px]">
+        <div className="flex items-center justify-center gap-3 text-[11px] flex-wrap">
+          <Link
+            to="/terms"
+            className="text-stone-600 hover:text-orange-600 font-bold"
+          >
+            الشروط والأحكام
+          </Link>
+          <span className="text-stone-300">•</span>
           <Link
             to="/about"
             className="text-stone-600 hover:text-orange-600 font-bold"

@@ -6,6 +6,7 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 // صفحات المستخدم
 import Home from './pages/Home';
@@ -49,6 +50,7 @@ function App() {
 <Route path="/checkout" element={<Checkout />} />
 <Route path="/about" element={<About />} />
 <Route path="/privacy" element={<Privacy />} />
+<Route path="/terms" element={<Terms />} />
         <Route path="/favorites" element={<Favorites />} />
 
         {/* صفحات المصادقة */}

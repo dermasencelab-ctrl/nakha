@@ -348,12 +348,19 @@ const About = () => {
             صُنع في بشار{' '}
             <Heart className="w-3 h-3 inline fill-red-400 text-red-400" /> للجزائر
           </p>
-          <div className="flex items-center justify-center gap-3 text-[11px] mt-2">
+          <div className="flex items-center justify-center gap-3 text-[11px] mt-2 flex-wrap">
             <Link
               to="/privacy"
               className="text-stone-600 hover:text-orange-600 font-bold"
             >
               سياسة الخصوصية
+            </Link>
+            <span className="text-stone-300">•</span>
+            <Link
+              to="/terms"
+              className="text-stone-600 hover:text-orange-600 font-bold"
+            >
+              الشروط والأحكام
             </Link>
             <span className="text-stone-300">•</span>
             <Link
