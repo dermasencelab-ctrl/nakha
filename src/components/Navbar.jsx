@@ -18,6 +18,7 @@ import {
   Settings,
   Heart,
   CalendarClock,
+  UserPen,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -349,6 +350,7 @@ export default function Navbar() {
             {isCook && (
               <MenuSection title="لوحة الطباخة">
                 <MenuItem to="/cook/dashboard" icon={LayoutDashboard} label="لوحة التحكم" />
+                <MenuItem to="/cook/edit-profile" icon={UserPen} label="تعديل الملف الشخصي" />
                 <MenuItem to="/cook/dishes" icon={Utensils} label="أطباقي" />
                 <MenuItem to="/cook/orders" icon={ClipboardList} label="الطلبات" />
                 <MenuItem to="/cook/wallet" icon={Wallet} label="المحفظة" />

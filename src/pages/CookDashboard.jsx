@@ -36,6 +36,7 @@ import {
   Calendar,
   Activity,
   CalendarClock,
+  UserPen,
 } from 'lucide-react';
 
 const CookDashboard = () => {
@@ -551,6 +552,13 @@ const CookDashboard = () => {
                 </div>
               )}
             </div>
+            <Link
+              to="/cook/edit-profile"
+              className="mt-4 flex items-center justify-center gap-2 w-full bg-orange-50 hover:bg-orange-100 text-orange-600 py-2.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all"
+            >
+              <UserPen className="w-4 h-4" strokeWidth={2.4} />
+              تعديل الملف الشخصي
+            </Link>
           </div>
         )}
 

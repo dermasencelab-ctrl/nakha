@@ -25,6 +25,7 @@ import CookOrders from './pages/CookOrders';
 import CookWallet from './pages/CookWallet';
 import CookTopup from './pages/CookTopup';
 import CookSchedule from './pages/CookSchedule';
+import CookEditProfile from './pages/CookEditProfile';
 import RateOrder from './pages/RateOrder';
 import Favorites from './pages/Favorites';
 
@@ -104,6 +105,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['cook']}>
               <CookSchedule />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cook/edit-profile"
+          element={
+            <ProtectedRoute allowedRoles={['cook']}>
+              <CookEditProfile />
             </ProtectedRoute>
           }
         />
