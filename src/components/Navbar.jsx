@@ -19,6 +19,8 @@ import {
   Heart,
   CalendarClock,
   UserPen,
+  BarChart2,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -365,6 +367,9 @@ export default function Navbar() {
                 <MenuItem to="/admin/cooks" icon={ChefHat} label="إدارة الطباخات" />
                 <MenuItem to="/admin/dishes" icon={Utensils} label="إدارة الأطباق" />
                 <MenuItem to="/admin/topups" icon={Wallet} label="عمليات الشحن" />
+                <MenuItem to="/admin/orders" icon={ShoppingBag} label="إدارة الطلبات" />
+                <MenuItem to="/admin/reports" icon={BarChart2} label="تقارير الأرباح" />
+                <MenuItem to="/admin/ratings" icon={Star} label="إدارة التقييمات" />
               </MenuSection>
             )}
 

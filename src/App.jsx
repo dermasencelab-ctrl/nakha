@@ -34,6 +34,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageCooks from './pages/admin/ManageCooks';
 import ManageDishes from './pages/admin/ManageDishes';
 import ManageTopups from './pages/admin/ManageTopups';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminReports from './pages/admin/AdminReports';
+import AdminRatings from './pages/admin/AdminRatings';
 
 function App() {
   return (
@@ -147,6 +150,30 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <ManageTopups />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminOrders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/ratings"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminRatings />
             </ProtectedRoute>
           }
         />

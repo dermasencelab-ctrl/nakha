@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChefHat, Utensils, LogOut, Home, Wallet, Package, TrendingUp, Users, ShoppingBag, Clock, ArrowUpRight, Activity } from 'lucide-react';
+import { ChefHat, Utensils, LogOut, Home, Wallet, Package, TrendingUp, Users, ShoppingBag, Clock, ArrowUpRight, Activity, Star, BarChart2 } from 'lucide-react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../contexts/AuthContext';
@@ -289,6 +289,64 @@ function AdminDashboard() {
               <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-emerald-600 transition">إدارة الأرصدة</h3>
               <p className="text-sm text-gray-500 leading-relaxed">مراجعة طلبات شحن الأرصدة والموافقة عليها أو رفضها</p>
               <div className="mt-4 flex items-center gap-1 text-emerald-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+                <span>فتح الصفحة</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* إدارة الطلبات */}
+          <Link to="/admin/orders"
+            className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-100 hover:border-orange-300 relative">
+            {stats.pendingOrders > 0 && (
+              <div className="absolute top-4 left-4 z-10">
+                <span className="bg-amber-500 text-white text-xs px-3 py-1.5 rounded-full font-bold shadow-lg animate-pulse">
+                  {stats.pendingOrders} جديد
+                </span>
+              </div>
+            )}
+            <div className="h-2 bg-gradient-to-l from-blue-400 to-indigo-400 group-hover:h-3 transition-all duration-300" />
+            <div className="p-7">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <ShoppingBag className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition">إدارة الطلبات</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">عرض جميع الطلبات، فلترتها وإلغاء أي طلب عند الحاجة</p>
+              <div className="mt-4 flex items-center gap-1 text-blue-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+                <span>فتح الصفحة</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* تقارير الأرباح */}
+          <Link to="/admin/reports"
+            className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-100 hover:border-orange-300">
+            <div className="h-2 bg-gradient-to-l from-purple-400 to-pink-400 group-hover:h-3 transition-all duration-300" />
+            <div className="p-7">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <BarChart2 className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition">تقارير الأرباح</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">إيرادات اليوم والأسبوع والشهر، أفضل الطباخات والأطباق</p>
+              <div className="mt-4 flex items-center gap-1 text-purple-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+                <span>فتح الصفحة</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* إدارة التقييمات */}
+          <Link to="/admin/ratings"
+            className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-orange-100 hover:border-orange-300">
+            <div className="h-2 bg-gradient-to-l from-amber-400 to-yellow-400 group-hover:h-3 transition-all duration-300" />
+            <div className="p-7">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                <Star className="w-8 h-8 text-amber-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-amber-600 transition">إدارة التقييمات</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">مراجعة تقييمات الزبائن وحذف التقييمات المسيئة</p>
+              <div className="mt-4 flex items-center gap-1 text-amber-500 text-sm font-medium opacity-0 group-hover:opacity-100 transition">
                 <span>فتح الصفحة</span>
                 <ArrowUpRight className="w-4 h-4" />
               </div>
