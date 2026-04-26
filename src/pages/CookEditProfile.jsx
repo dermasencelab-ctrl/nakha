@@ -146,18 +146,21 @@ const CookEditProfile = () => {
       return false;
     }
 
-    // التحقق من تكرار الهاتف (باستثناء الرقم الحالي)
+    // التحقق من تكرار الهاتف (مع استبعاد وثيقة الطباخة الحالية)
     if (form.phone !== originalPhone) {
       const phoneSnap = await getDocs(
         query(collection(db, 'cooks'), where('phone', '==', form.phone))
       );
-      if (!phoneSnap.empty) {
+      const phoneTaken = phoneSnap.docs.some(
+        (d) => d.id !== userProfile.cookId
+      );
+      if (phoneTaken) {
         setError('رقم الهاتف مسجّل مسبقاً لدى طباخة أخرى');
         return false;
       }
     }
 
-    // التحقق من تكرار الاسم (باستثناء الاسم الحالي)
+    // التحقق من تكرار الاسم (مع استبعاد وثيقة الطباخة الحالية)
     if (form.name.trim() !== originalName) {
       const nameSnap = await getDocs(
         query(
@@ -165,7 +168,10 @@ const CookEditProfile = () => {
           where('name', '==', form.name.trim())
         )
       );
-      if (!nameSnap.empty) {
+      const nameTaken = nameSnap.docs.some(
+        (d) => d.id !== userProfile.cookId
+      );
+      if (nameTaken) {
         setError('هذا الاسم مسجّل مسبقاً، يرجى اختيار اسم آخر');
         return false;
       }

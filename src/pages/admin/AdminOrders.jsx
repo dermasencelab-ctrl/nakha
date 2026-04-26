@@ -6,6 +6,10 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  query,
+  where,
+  addDoc,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../contexts/AuthContext';
@@ -118,15 +122,75 @@ const AdminOrders = () => {
   }, []);
 
   const handleCancel = async (order) => {
-    if (
-      !confirm(
-        `هل أنت متأكد من إلغاء طلب الزبون ${order.customerName} لدى الطباخة ${order.cookName}؟`
-      )
-    )
-      return;
+    // If commission was already deducted (status reached 'ready' or beyond),
+    // we must reverse it on the cook's wallet to avoid charging for a
+    // cancelled order.
+    const wasCharged =
+      order.status === 'ready' || order.status === 'completed';
+
+    const confirmMsg = wasCharged
+      ? `هل أنت متأكد من إلغاء طلب الزبون ${order.customerName} لدى الطباخة ${order.cookName}؟\nسيتم إعادة الرسوم تلقائياً إلى رصيد الطباخة.`
+      : `هل أنت متأكد من إلغاء طلب الزبون ${order.customerName} لدى الطباخة ${order.cookName}؟`;
+
+    if (!confirm(confirmMsg)) return;
 
     setActionLoading(true);
     try {
+      // Reverse the prior wallet effect, if any
+      if (wasCharged && order.cookId) {
+        const txSnap = await getDocs(
+          query(
+            collection(db, 'transactions'),
+            where('orderId', '==', order.id)
+          )
+        );
+        // Only reverse the original deduction; ignore previous reversals
+        const original = txSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .find(
+            (t) => t.type === 'commission' || t.type === 'free_order'
+          );
+
+        if (original) {
+          const cookRef = doc(db, 'cooks', order.cookId);
+
+          if (original.type === 'commission') {
+            await updateDoc(cookRef, {
+              balance: increment(original.amount || 0),
+              totalCommission: increment(-(original.amount || 0)),
+              totalOrders: increment(-1),
+            });
+            await addDoc(collection(db, 'transactions'), {
+              cookId: order.cookId,
+              type: 'cancellation_refund',
+              amount: original.amount || 0,
+              orderId: order.id,
+              orderTotal: original.orderTotal || 0,
+              description: `استرجاع رسوم طلب ملغى #${order.id.slice(0, 8).toUpperCase()}`,
+              originalTransactionId: original.id,
+              createdAt: serverTimestamp(),
+            });
+          } else {
+            // Free order: restore the free-order quota
+            await updateDoc(cookRef, {
+              freeOrdersRemaining: increment(1),
+              freeOrdersUsed: increment(-1),
+              totalOrders: increment(-1),
+            });
+            await addDoc(collection(db, 'transactions'), {
+              cookId: order.cookId,
+              type: 'cancellation_refund',
+              amount: 0,
+              orderId: order.id,
+              orderTotal: original.orderTotal || 0,
+              description: `استرجاع طلب مجاني ملغى #${order.id.slice(0, 8).toUpperCase()}`,
+              originalTransactionId: original.id,
+              createdAt: serverTimestamp(),
+            });
+          }
+        }
+      }
+
       await updateDoc(doc(db, 'orders', order.id), {
         status: 'cancelled',
         cancelledByAdmin: true,
@@ -461,9 +525,6 @@ function OrderModal({ order, onClose, onCancel, actionLoading }) {
           {/* الطباخة */}
           <Section title="معلومات الطباخة" icon={ChefHat}>
             <Row label="الاسم" value={order.cookName || '-'} />
-            {order.cookPhone && (
-              <Row label="الهاتف" value={order.cookPhone} ltr />
-            )}
           </Section>
 
           {/* الأطباق */}
