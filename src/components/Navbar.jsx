@@ -111,17 +111,10 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 active:scale-95 transition-transform">
             <img
-              src="/og-image.png"
+              src="/nakha-logo.png"
               alt="نَكهة"
               className="w-10 h-10 rounded-2xl object-cover shadow-lg shadow-orange-500/30"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextElementSibling.style.display = 'flex';
-              }}
             />
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 items-center justify-center shadow-lg shadow-orange-500/30 hidden">
-              <ChefHat className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold text-orange-600 leading-none">نَكهة</span>
               <span className="text-[10px] text-stone-500 font-medium">أكل بيتي في بشار</span>
@@ -302,9 +295,11 @@ export default function Navbar() {
             <div className="relative pt-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
-                    <ChefHat className="w-6 h-6" strokeWidth={2.5} />
-                  </div>
+                  <img
+                    src="/nakha-logo.png"
+                    alt="نَكهة"
+                    className="w-12 h-12 rounded-2xl object-cover"
+                  />
                   <div>
                     <h2 className="text-2xl font-extrabold leading-none">نَكهة</h2>
                     <p className="text-xs text-white/80 mt-1">أكل بيتي بشار</p>
