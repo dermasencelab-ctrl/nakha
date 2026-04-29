@@ -7,8 +7,11 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+
+// converts phone number to a valid email for Firebase Auth
+const phoneToEmail = (phone) => `${phone}@nakha.customer`;
 
 // Ensure sessions survive browser restarts — set once at module load
 setPersistence(auth, browserLocalPersistence).catch(() => {});
@@ -123,6 +126,47 @@ export const AuthProvider = ({ children }) => {
     return { user, profile: userProfileData };
   };
 
+  // تسجيل زبون جديد (بالهاتف وكلمة المرور)
+  const signupCustomer = async (phone, password) => {
+    // التحقق من عدم تكرار رقم الهاتف
+    const phoneQuery = query(collection(db, 'customers'), where('phone', '==', phone));
+    const phoneSnap = await getDocs(phoneQuery);
+    if (!phoneSnap.empty) {
+      const error = new Error('رقم الهاتف مسجّل مسبقاً');
+      error.code = 'auth/phone-already-in-use';
+      throw error;
+    }
+
+    const email = phoneToEmail(phone);
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+
+    const customerData = {
+      uid: user.uid,
+      phone,
+      role: 'customer',
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+    };
+    await setDoc(doc(db, 'customers', user.uid), customerData);
+    await setDoc(doc(db, 'users', user.uid), { ...customerData });
+
+    setUserProfile({ ...customerData });
+    return { user, profile: customerData };
+  };
+
+  // تسجيل دخول الزبون (بالهاتف وكلمة المرور)
+  const loginCustomer = async (phone, password) => {
+    const email = phoneToEmail(phone);
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const profile = await fetchUserProfile(result.user);
+    if (profile) {
+      await setDoc(doc(db, 'users', result.user.uid), { lastLogin: serverTimestamp() }, { merge: true });
+    }
+    setUserProfile(profile);
+    return { user: result.user, profile };
+  };
+
   // تسجيل الخروج
   const logout = async () => {
     await signOut(auth);
@@ -152,6 +196,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     signupCook,
+    signupCustomer,
+    loginCustomer,
     logout,
   };
 

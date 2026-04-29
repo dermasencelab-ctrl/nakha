@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { ArrowRight, Plus, Edit, Trash2, X } from 'lucide-react';
+import ImageUploader from '../../components/ImageUploader';
 
 function ManageDishes() {
   const [dishes, setDishes] = useState([]);
@@ -170,7 +171,12 @@ function ManageDishes() {
                 </select>
                 <input required placeholder="اسم الطبق" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
                 <textarea required placeholder="الوصف" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full p-3 border-2 rounded-xl" rows="2" />
-                <input required placeholder="رابط الصورة" value={form.image} onChange={e => setForm({...form, image: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
+                <ImageUploader
+                  value={form.image}
+                  onChange={(url) => setForm({ ...form, image: url })}
+                  folder="dishes"
+                  label="صورة الطبق"
+                />
                 <input type="number" required placeholder="السعر (دج)" value={form.price} onChange={e => setForm({...form, price: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
                 <input type="number" placeholder="الكمية المتاحة" value={form.availableQuantity} onChange={e => setForm({...form, availableQuantity: e.target.value})} className="w-full p-3 border-2 rounded-xl" />
                 <label className="flex items-center gap-2">

@@ -17,11 +17,10 @@ import {
 
 // تصنيفات الاكتشاف السريع — تنقل للفلتر المناسب في صفحة الطباخات
 const DISH_CATEGORIES = [
-  { id: 'pastry',      emoji: '🍰', label: 'حلويات',        path: '/cooks?type=pastry'      },
-  { id: 'gateau',      emoji: '🍪', label: 'معجنات',         path: '/cooks?type=pastry'      },
-  { id: 'traditional', emoji: '🍲', label: 'أطباق رئيسية', path: '/cooks?type=traditional' },
-  { id: 'healthy',     emoji: '🥗', label: 'سلطات',          path: '/cooks?type=healthy'     },
-  { id: 'drinks',      emoji: '🥤', label: 'مشروبات',        path: '/cooks'                  },
+  { id: 'pastry',      emoji: '🍰', label: 'حلويات ومعجنات', path: '/cooks?type=pastry'      },
+  { id: 'traditional', emoji: '🍲', label: 'أكل تقليدي',    path: '/cooks?type=traditional' },
+  { id: 'home_cook',   emoji: '👩‍🍳', label: 'طباخة حرة',    path: '/cooks?type=home_cook'   },
+  { id: 'healthy',     emoji: '🥗', label: 'أكل صحي',       path: '/cooks?type=healthy'     },
 ];
 
 // Module-level pure helpers — stable references, no re-creation on render
@@ -163,16 +162,10 @@ function Home() {
                   onClick={() => navigate(cat.path)}
                   className="flex-shrink-0 flex flex-col items-center gap-1.5 group active:scale-90 transition-transform"
                 >
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-md shadow-orange-900/10 transition-colors ${
-                    cat.id === 'pastry'
-                      ? 'bg-orange-100 border-2 border-orange-200'
-                      : 'bg-white border border-stone-100'
-                  }`}>
+                  <div className="w-14 h-14 rounded-full bg-white border border-stone-100 flex items-center justify-center text-2xl shadow-md shadow-orange-900/10 group-hover:border-orange-300 group-hover:bg-orange-50 transition-colors">
                     {cat.emoji}
                   </div>
-                  <span className={`text-[10px] font-extrabold ${
-                    cat.id === 'pastry' ? 'text-orange-600' : 'text-stone-600'
-                  }`}>
+                  <span className="text-[10px] font-extrabold text-stone-600 group-hover:text-orange-600 transition-colors">
                     {cat.label}
                   </span>
                 </button>
@@ -186,6 +179,46 @@ function Home() {
             <TrustChip icon={Award} label="جودة" />
             <TrustChip icon={Heart} label="بحب" />
           </div>
+
+          {/* زر CTA كبير */}
+          <div className="mt-5">
+            <button
+              onClick={() => navigate('/cooks')}
+              className="w-full max-w-xl mx-auto flex items-center justify-center gap-3 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-4 px-8 rounded-2xl text-base font-extrabold shadow-xl shadow-orange-500/40 active:scale-[0.97] transition-all"
+            >
+              <Sparkles className="w-5 h-5" strokeWidth={2.3} />
+              ابدئي طلبك الآن
+              <ArrowLeft className="w-5 h-5" strokeWidth={2.8} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================ */}
+      {/* كيفية الطلب في 3 خطوات */}
+      {/* ============================================ */}
+      <section className="max-w-5xl mx-auto px-4 mb-8">
+        <div className="flex items-center gap-2 mb-4 px-1">
+          <div className="w-1.5 h-5 bg-orange-500 rounded-full" />
+          <h2 className="text-lg font-extrabold text-stone-800">كيفية الطلب في 3 خطوات</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            { step: '١', emoji: '👩‍🍳', title: 'اختاري الطباخة', desc: 'تصفّحي الطباخات وانقري على أي طبق يعجبكِ' },
+            { step: '٢', emoji: '🛒', title: 'أضيفي للسلة', desc: 'أدخلي رقم هاتفكِ وموعد التسليم وأكّدي الطلب' },
+            { step: '٣', emoji: '📱', title: 'تابعي الطلب', desc: 'راقبي حالة طلبكِ في "طلباتي" حتى يصل' },
+          ].map(({ step, emoji, title, desc }) => (
+            <div key={step} className="bg-white rounded-3xl p-4 shadow-sm flex gap-3 items-start">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-sm flex-shrink-0 shadow-md shadow-orange-500/30">
+                {step}
+              </div>
+              <div>
+                <p className="text-xl mb-1">{emoji}</p>
+                <h3 className="font-extrabold text-stone-800 text-sm mb-0.5">{title}</h3>
+                <p className="text-xs text-stone-500 leading-relaxed">{desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

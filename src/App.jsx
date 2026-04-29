@@ -18,6 +18,7 @@ import MyOrders from './pages/MyOrders';
 // صفحات المصادقة
 import Login from './pages/Login';
 import CookSignup from './pages/CookSignup';
+import CustomerSignup from './pages/CustomerSignup';
 import CookPending from './pages/CookPending';
 import CookDashboard from './pages/CookDashboard';
 import CookDishes from './pages/CookDishes';
@@ -26,6 +27,7 @@ import CookWallet from './pages/CookWallet';
 import CookTopup from './pages/CookTopup';
 import CookSchedule from './pages/CookSchedule';
 import CookEditProfile from './pages/CookEditProfile';
+import CookRevenue from './pages/CookRevenue';
 import RateOrder from './pages/RateOrder';
 import Favorites from './pages/Favorites';
 
@@ -61,6 +63,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cook/signup" element={<CookSignup />} />
         <Route path="/cook/pending" element={<CookPending />} />
+        <Route path="/customer/signup" element={<CustomerSignup />} />
 
         {/* صفحات الطباخة المحمية */}
         <Route
@@ -116,6 +119,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['cook']}>
               <CookEditProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cook/revenue"
+          element={
+            <ProtectedRoute allowedRoles={['cook']}>
+              <CookRevenue />
             </ProtectedRoute>
           }
         />

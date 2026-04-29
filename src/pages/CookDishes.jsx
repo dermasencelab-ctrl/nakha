@@ -24,6 +24,8 @@ const CookDishes = () => {
     category: 'plat_principal',
     photo: '',
     available: true,
+    readyNow: false,
+    prepTime: '',
   });
 
   // الفئات — الحلويات ثاني فئة بعد الطبق الرئيسي
@@ -85,6 +87,7 @@ const CookDishes = () => {
     setFormData({
       name: '', description: '', price: '', unit: 'plate',
       category: 'plat_principal', photo: '', available: true,
+      readyNow: false, prepTime: '',
     });
     setShowForm(true);
   };
@@ -99,6 +102,8 @@ const CookDishes = () => {
       category: dish.category || 'plat_principal',
       photo: dish.photo || '',
       available: dish.available !== false,
+      readyNow: dish.readyNow || false,
+      prepTime: dish.prepTime?.toString() || '',
     });
     setShowForm(true);
   };
@@ -119,6 +124,8 @@ const CookDishes = () => {
         category: formData.category,
         photo: formData.photo.trim(),
         available: formData.available,
+        readyNow: formData.readyNow,
+        prepTime: formData.prepTime ? parseInt(formData.prepTime, 10) : null,
       };
 
       if (editingDish) {
@@ -200,6 +207,14 @@ const CookDishes = () => {
                   <p className="text-xs text-gray-500 mb-2">
                     {categories.find((c) => c.value === dish.category)?.label || dish.category}
                   </p>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {dish.readyNow && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">⚡ متاح فوراً</span>
+                    )}
+                    {dish.prepTime > 0 && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">⏱️ {dish.prepTime} دقيقة</span>
+                    )}
+                  </div>
 
                   {dish.description && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-2">{dish.description}</p>
@@ -298,6 +313,32 @@ const CookDishes = () => {
                     folder="dishes"
                     label="صورة الطبق"
                   />
+
+                  {/* تحضير فوري + مدة التحضير */}
+                  <div className="bg-orange-50 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" id="readyNow" checked={formData.readyNow}
+                        onChange={(e) => setFormData({ ...formData, readyNow: e.target.checked })}
+                        className="w-5 h-5 text-orange-600 rounded" />
+                      <label htmlFor="readyNow" className="text-gray-700 font-medium text-sm">
+                        ⚡ يتوفر تحضير فوري — الطبق جاهز الآن
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 mb-1.5 font-medium text-sm">
+                        ⏱️ مدة التحضير (بالدقائق) — اختياري
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="300"
+                        value={formData.prepTime}
+                        onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
+                        placeholder="مثال: 30"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-sm"
+                      />
+                    </div>
+                  </div>
 
                   <div className="flex items-center gap-3">
                     <input type="checkbox" id="available" checked={formData.available}

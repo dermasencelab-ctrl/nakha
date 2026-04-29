@@ -476,6 +476,12 @@ const CookDashboard = () => {
               label="أوقات العمل"
               color="violet"
             />
+            <ActionCard
+              to="/cook/revenue"
+              icon={Activity}
+              label="تحليل الإيرادات"
+              color="orange"
+            />
           </div>
         </div>
 

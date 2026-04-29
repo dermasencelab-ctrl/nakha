@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowRight,
   Package,
@@ -113,6 +114,10 @@ const activeStatuses = ['pending', 'accepted', 'preparing', 'in_progress', 'read
 
 function MyOrders() {
   const [params] = useSearchParams();
+  const { userProfile, userRole } = useAuth();
+  const isLoggedInCustomer = userRole === 'customer';
+  const customerPhone = userProfile?.phone || '';
+
   const [phone, setPhone] = useState(params.get('phone') || '');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -154,21 +159,25 @@ function MyOrders() {
     setSearched(true);
   };
 
-  // تحميل أولي — من URL أو من localStorage
+  // تحميل أولي — من حساب الزبون أو URL أو localStorage
   useEffect(() => {
+    if (isLoggedInCustomer && customerPhone) {
+      setPhone(customerPhone);
+      fetchOrders(customerPhone);
+      return;
+    }
     const urlPhone = params.get('phone');
     const savedPhone =
       typeof localStorage !== 'undefined'
         ? localStorage.getItem('customerPhone')
         : null;
-
     const phoneToUse = urlPhone || savedPhone;
     if (phoneToUse) {
       setPhone(phoneToUse);
       fetchOrders(phoneToUse);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLoggedInCustomer, customerPhone]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -301,10 +310,17 @@ function MyOrders() {
             </button>
           </form>
 
+          {/* دعوة للتسجيل */}
+          <Link to="/customer/signup"
+            className="mt-3 flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-sm py-3 px-4 rounded-2xl active:scale-95 transition">
+            <Package className="w-4 h-4" strokeWidth={2.3} />
+            سجّل حساباً لتتبّع طلباتك تلقائياً
+          </Link>
+
           {/* لا يوجد طلبات بعد؟ */}
           <Link
             to="/cooks"
-            className="mt-4 flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 font-bold text-sm py-2 active:scale-95 transition"
+            className="mt-3 flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 font-bold text-sm py-2 active:scale-95 transition"
           >
             <ChefHat className="w-4 h-4" strokeWidth={2.3} />
             لم تطلب بعد؟ تصفّح الطباخات

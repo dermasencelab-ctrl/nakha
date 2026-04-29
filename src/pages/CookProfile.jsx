@@ -499,7 +499,12 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
 
         {/* شارات فوق الصورة */}
         <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-          {dish.isReadyToday && (
+          {dish.readyNow && (
+            <div className="bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
+              ⚡ متاح فوراً
+            </div>
+          )}
+          {!dish.readyNow && dish.isReadyToday && (
             <div className="bg-orange-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
               <Flame className="w-3 h-3" strokeWidth={2.5} />
               جاهز اليوم
@@ -528,9 +533,17 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
         </h3>
 
         {dish.description && (
-          <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-3">
+          <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-2">
             {dish.description}
           </p>
+        )}
+
+        {/* مدة التحضير */}
+        {dish.prepTime > 0 && (
+          <div className="flex items-center gap-1 text-[11px] text-blue-600 font-bold mb-2">
+            <Clock className="w-3 h-3" strokeWidth={2.5} />
+            يجهّز في {dish.prepTime} دقيقة
+          </div>
         )}
 
         {/* السعر + زر الإضافة */}

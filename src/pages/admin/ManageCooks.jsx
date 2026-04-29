@@ -6,13 +6,31 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { FOUNDING_MEMBERS } from '../../config/settings';
+import { ExternalLink, X as XIcon, ZoomIn } from 'lucide-react';
+
+const getSocialEmoji = (url) => {
+  if (!url) return '🔗';
+  if (url.includes('instagram')) return '📷';
+  if (url.includes('facebook') || url.includes('fb.com')) return '👥';
+  if (url.includes('tiktok')) return '🎵';
+  return '🔗';
+};
+
+const getSocialLabel = (url) => {
+  if (!url) return 'رابط التواصل';
+  if (url.includes('instagram')) return 'إنستغرام';
+  if (url.includes('facebook') || url.includes('fb.com')) return 'فيسبوك';
+  if (url.includes('tiktok')) return 'تيك توك';
+  return 'رابط التواصل';
+};
 
 const ManageCooks = () => {
   const [cooks, setCooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [actionLoading, setActionLoading] = useState(null);
-  const [selectedCook, setSelectedCook] = useState(null); // للـ Modal
+  const [selectedCook, setSelectedCook] = useState(null);
+  const [lightboxImg, setLightboxImg] = useState(null);
 
   // أنواع الطباخات
   const cookTypeLabels = {
@@ -363,26 +381,36 @@ const ManageCooks = () => {
                 {/* رابط السوشيال ميديا */}
                 {selectedCook.socialLink && (
                   <div className="bg-blue-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-gray-700 mb-2">🔗 صفحة السوشيال ميديا</h4>
+                    <h4 className="font-bold text-gray-700 mb-2">🔗 صفحة التواصل الاجتماعي</h4>
                     <a href={selectedCook.socialLink} target="_blank" rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm break-all">
-                      {selectedCook.socialLink}
+                      className="inline-flex items-center gap-2 bg-white border border-blue-200 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100 transition text-sm font-bold">
+                      <span>{getSocialEmoji(selectedCook.socialLink)}</span>
+                      {getSocialLabel(selectedCook.socialLink)} — اضغط للفتح
+                      <ExternalLink className="w-3 h-3 opacity-60" />
                     </a>
                   </div>
                 )}
 
                 {/* صور الأعمال السابقة */}
-                {selectedCook.portfolioImages?.length > 0 && (
+                {selectedCook.portfolioImages?.length > 0 ? (
                   <div className="bg-green-50 rounded-xl p-4 mb-4">
                     <h4 className="font-bold text-gray-700 mb-3">📸 صور أعمال سابقة ({selectedCook.portfolioImages.length})</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
                       {selectedCook.portfolioImages.map((img, index) => (
-                        <a key={index} href={img} target="_blank" rel="noopener noreferrer">
+                        <button key={index} type="button" onClick={() => setLightboxImg(img)}
+                          className="relative group aspect-square overflow-hidden rounded-lg border-2 border-white shadow hover:shadow-lg transition">
                           <img src={img} alt={`عمل ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border-2 border-white shadow hover:shadow-lg transition cursor-pointer" />
-                        </a>
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <ZoomIn className="w-5 h-5 text-white" />
+                          </div>
+                        </button>
                       ))}
                     </div>
+                  </div>
+                ) : (
+                  <div className="bg-stone-50 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-stone-500 text-center">لم تحمّل صور أعمال بعد</p>
                   </div>
                 )}
 
@@ -464,6 +492,19 @@ const ManageCooks = () => {
           </div>
         )}
       </div>
+
+      {/* Lightbox معاينة الصورة */}
+      {lightboxImg && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+          onClick={() => setLightboxImg(null)}>
+          <button onClick={() => setLightboxImg(null)}
+            className="absolute top-4 left-4 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition">
+            <XIcon className="w-5 h-5 text-white" />
+          </button>
+          <img src={lightboxImg} alt="معاينة" onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" />
+        </div>
+      )}
     </div>
   );
 };
