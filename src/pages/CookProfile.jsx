@@ -81,6 +81,10 @@ function CookProfile() {
   };
 
   const handleAddToCart = (dish) => {
+    if (isCookClosed) {
+      showToast('error', 'الطباخة مغلقة حالياً — لا يمكن الطلب الآن');
+      return;
+    }
     addToCart(dish, cook);
     setAddedDishId(dish.id);
     showToast('success', `تمت إضافة ${dish.name} للسلة! 🎉`);
@@ -148,6 +152,8 @@ function CookProfile() {
 
   const cookType = cookTypeLabels[cook.cookType];
   const hasAvailableDishes = dishes.some((d) => d.isReadyToday || d.available);
+  const scheduleStatus = isInSchedule(cook.schedule);
+  const isCookClosed = cook.isAcceptingOrders === false || scheduleStatus === false;
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FFF8F0]" style={{ paddingBottom: cookCartItems.length > 0 ? '160px' : '96px' }}>
@@ -358,6 +364,16 @@ function CookProfile() {
       {/* الأطباق */}
       {/* ============================================ */}
       <div className="max-w-4xl mx-auto px-4 pb-8">
+        {isCookClosed && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3">
+            <span className="text-2xl">🔴</span>
+            <div>
+              <p className="text-sm font-extrabold text-red-700">الطباخة مغلقة حالياً</p>
+              <p className="text-xs text-red-500 mt-0.5">لا يمكن إضافة أطباق للسلة في الوقت الحالي</p>
+            </div>
+          </div>
+        )}
+
         {dishes.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
             <div className="text-5xl mb-3">🍽️</div>
@@ -375,6 +391,7 @@ function CookProfile() {
                 justAdded={addedDishId === dish.id}
                 onAdd={() => handleAddToCart(dish)}
                 getDishImage={getDishImage}
+                cookClosed={isCookClosed}
               />
             ))}
           </div>
@@ -470,7 +487,7 @@ function StatPill({ icon: Icon, iconClass, value, label, color }) {
 /* ============================================ */
 /* بطاقة طبق */
 /* ============================================ */
-function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
+function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage, cookClosed }) {
   const unitLabel = getUnitLabel(dish.unit || 'plate');
   const isLowStock = dish.availableQuantity > 0 && dish.availableQuantity <= 5;
 
@@ -565,7 +582,9 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage }) {
           <button
             onClick={onAdd}
             className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-90 shadow-lg ${
-              justAdded
+              cookClosed
+                ? 'bg-stone-200 text-stone-400 shadow-none cursor-not-allowed'
+                : justAdded
                 ? 'bg-green-500 text-white shadow-green-500/40 scale-95'
                 : inCartQty > 0
                 ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30'
