@@ -20,6 +20,7 @@ import Login from './pages/Login';
 import CookSignup from './pages/CookSignup';
 import CustomerSignup from './pages/CustomerSignup';
 import CookPending from './pages/CookPending';
+import CookRejected from './pages/CookRejected';
 import CookDashboard from './pages/CookDashboard';
 import CookDishes from './pages/CookDishes';
 import CookOrders from './pages/CookOrders';
@@ -63,6 +64,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/cook/signup" element={<CookSignup />} />
         <Route path="/cook/pending" element={<CookPending />} />
+        <Route path="/cook/rejected" element={<CookRejected />} />
         <Route path="/customer/signup" element={<CustomerSignup />} />
 
         {/* صفحات الطباخة المحمية */}

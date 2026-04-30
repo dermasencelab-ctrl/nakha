@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,6 @@ import {
   Utensils,
   Star,
   Phone,
-  Search,
   ChefHat,
   RefreshCw,
   MessageCircle,
@@ -113,79 +112,42 @@ const tabs = [
 const activeStatuses = ['pending', 'accepted', 'preparing', 'in_progress', 'ready'];
 
 function MyOrders() {
-  const [params] = useSearchParams();
   const { userProfile, userRole } = useAuth();
   const isLoggedInCustomer = userRole === 'customer';
   const customerPhone = userProfile?.phone || '';
 
-  const [phone, setPhone] = useState(params.get('phone') || '');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [fetched, setFetched] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchOrders = async (phoneNum, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
-      const q = query(
-        collection(db, 'orders'),
-        where('customerPhone', '==', phoneNum)
-      );
+      const q = query(collection(db, 'orders'), where('customerPhone', '==', phoneNum));
       const snap = await getDocs(q);
-      const ordersData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-      ordersData.sort((a, b) => {
-        const timeA = a.createdAt?.seconds || 0;
-        const timeB = b.createdAt?.seconds || 0;
-        return timeB - timeA;
-      });
-
-      setOrders(ordersData);
-
-      // حفظ الهاتف في localStorage للمرة القادمة
-      if (phoneNum && typeof localStorage !== 'undefined') {
-        localStorage.setItem('customerPhone', phoneNum);
-      }
+      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setOrders(data);
     } catch (err) {
       console.error(err);
     }
     setLoading(false);
     setRefreshing(false);
-    setSearched(true);
+    setFetched(true);
   };
 
-  // تحميل أولي — من حساب الزبون أو URL أو localStorage
   useEffect(() => {
     if (isLoggedInCustomer && customerPhone) {
-      setPhone(customerPhone);
       fetchOrders(customerPhone);
-      return;
-    }
-    const urlPhone = params.get('phone');
-    const savedPhone =
-      typeof localStorage !== 'undefined'
-        ? localStorage.getItem('customerPhone')
-        : null;
-    const phoneToUse = urlPhone || savedPhone;
-    if (phoneToUse) {
-      setPhone(phoneToUse);
-      fetchOrders(phoneToUse);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedInCustomer, customerPhone]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (phone.length === 10) fetchOrders(phone);
-  };
-
   const handleRefresh = () => {
-    if (phone) fetchOrders(phone, true);
+    if (customerPhone) fetchOrders(customerPhone, true);
   };
 
   // تصفية الطلبات حسب التبويب
@@ -234,97 +196,51 @@ function MyOrders() {
   };
 
   // ============================================
-  // لم يبحث بعد
+  // غير مسجّل دخول — بوابة المصادقة
   // ============================================
-  if (!searched && !loading) {
+  if (!isLoggedInCustomer) {
     return (
       <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
         <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md">
           <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Link
-              to="/"
-              className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition"
-            >
+            <Link to="/" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition">
               <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
             </Link>
             <h1 className="text-xl font-extrabold text-stone-800">طلباتي</h1>
           </div>
         </header>
 
-        <div className="max-w-md mx-auto px-4 pt-8">
-          {/* Hero */}
-          <div className="text-center mb-8">
-            <div className="relative inline-block mb-4">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/30 mx-auto">
-                <Package className="w-12 h-12 text-white" strokeWidth={2} />
-              </div>
-              <div className="absolute -top-2 -left-2 text-3xl animate-gentle-bounce">
-                📱
-              </div>
+        <div className="max-w-md mx-auto px-4 pt-10 text-center">
+          {/* أيقونة */}
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-orange-400/20 rounded-3xl blur-2xl scale-150" />
+            <div className="relative w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/30 mx-auto">
+              <Package className="w-12 h-12 text-white" strokeWidth={2} />
             </div>
-            <h2 className="text-2xl font-black text-stone-800 mb-2">
-              تتبّع طلباتك
-            </h2>
-            <p className="text-sm text-stone-500 max-w-xs mx-auto">
-              أدخل رقم هاتفك الذي استخدمته في الطلب لعرض كل طلباتك
-            </p>
           </div>
 
-          {/* Form */}
-          <form
-            onSubmit={handleSearch}
-            className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 p-5 space-y-4"
-          >
-            <div>
-              <label className="flex items-center gap-2 text-xs font-bold text-stone-700 mb-2">
-                <Phone className="w-4 h-4 text-orange-500" strokeWidth={2.4} />
-                رقم الهاتف
-              </label>
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength="10"
-                required
-                placeholder="05XXXXXXXXX"
-                value={phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 10) setPhone(value);
-                }}
-                dir="ltr"
-                className="w-full px-4 py-3.5 bg-stone-50 border-2 border-stone-200 rounded-2xl text-base font-bold text-stone-700 text-right placeholder-stone-400 focus:outline-none focus:border-orange-400 focus:bg-white transition"
-                style={{ letterSpacing: '1px' }}
-              />
-              <p className="text-[11px] text-stone-500 mt-1.5">
-                10 أرقام، يبدأ بـ 0
-              </p>
-            </div>
+          <h2 className="text-2xl font-black text-stone-800 mb-2">تتبّع طلباتك</h2>
+          <p className="text-sm text-stone-500 mb-8 max-w-xs mx-auto leading-relaxed">
+            سجّل حساباً مجانياً برقم هاتفك لتتبّع طلباتك وحماية خصوصيتك
+          </p>
 
-            <button
-              type="submit"
-              disabled={phone.length !== 10}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-stone-300 disabled:to-stone-300 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all disabled:cursor-not-allowed disabled:shadow-none"
+          <div className="space-y-3">
+            <Link
+              to="/customer/signup"
+              className="flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all"
             >
-              <Search className="w-4 h-4" strokeWidth={2.5} />
-              بحث عن طلباتي
-            </button>
-          </form>
+              <Package className="w-4 h-4" strokeWidth={2.5} />
+              تسجيل / دخول لعرض طلباتي
+            </Link>
 
-          {/* دعوة للتسجيل */}
-          <Link to="/customer/signup"
-            className="mt-3 flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-sm py-3 px-4 rounded-2xl active:scale-95 transition">
-            <Package className="w-4 h-4" strokeWidth={2.3} />
-            سجّل حساباً لتتبّع طلباتك تلقائياً
-          </Link>
-
-          {/* لا يوجد طلبات بعد؟ */}
-          <Link
-            to="/cooks"
-            className="mt-3 flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 font-bold text-sm py-2 active:scale-95 transition"
-          >
-            <ChefHat className="w-4 h-4" strokeWidth={2.3} />
-            لم تطلب بعد؟ تصفّح الطباخات
-          </Link>
+            <Link
+              to="/cooks"
+              className="flex items-center justify-center gap-2 bg-white border-2 border-stone-200 text-stone-600 hover:border-orange-300 hover:text-orange-600 py-3.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all"
+            >
+              <ChefHat className="w-4 h-4" strokeWidth={2.3} />
+              تصفّح الطباخات
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -340,7 +256,7 @@ function MyOrders() {
       {/* ============================================ */}
       <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3">
             <Link
               to="/"
               className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition"
@@ -348,16 +264,11 @@ function MyOrders() {
               <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
             </Link>
             <div className="flex-1">
-              <h1 className="text-xl font-extrabold text-stone-800 leading-none">
-                طلباتي
-              </h1>
-              <p className="text-xs text-stone-500 mt-1">
-                {phone && (
-                  <span dir="ltr" style={{ unicodeBidi: 'embed' }}>
-                    📱 {phone}
-                  </span>
-                )}
-                {' '}•{' '}
+              <h1 className="text-xl font-extrabold text-stone-800 leading-none">طلباتي</h1>
+              <p className="text-xs text-stone-500 mt-1 flex items-center gap-1">
+                <Phone className="w-3 h-3" strokeWidth={2.3} />
+                <span dir="ltr">{customerPhone}</span>
+                <span className="text-stone-300 mx-1">•</span>
                 {orders.length} {orders.length === 1 ? 'طلب' : 'طلبات'}
               </p>
             </div>
@@ -373,34 +284,6 @@ function MyOrders() {
               />
             </button>
           </div>
-
-          {/* Search bar صغير */}
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative flex-1">
-              <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" strokeWidth={2.3} />
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength="10"
-                placeholder="رقم آخر..."
-                value={phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (value.length <= 10) setPhone(value);
-                }}
-                dir="ltr"
-                style={{ textAlign: 'right' }}
-                className="w-full bg-white rounded-xl py-2.5 pr-10 pl-3 text-sm font-bold text-stone-700 placeholder-stone-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={phone.length !== 10}
-              className="bg-orange-500 hover:bg-orange-600 disabled:bg-stone-300 text-white px-4 rounded-xl text-sm font-bold active:scale-95 transition-all disabled:cursor-not-allowed"
-            >
-              بحث
-            </button>
-          </form>
         </div>
 
         {/* Tabs */}
@@ -444,8 +327,8 @@ function MyOrders() {
       <main className="max-w-3xl mx-auto px-4 py-4">
         {loading ? (
           <OrdersSkeleton />
-        ) : orders.length === 0 ? (
-          <EmptyState type="no-orders" phone={phone} />
+        ) : !fetched || orders.length === 0 ? (
+          <EmptyState type="no-orders" phone={customerPhone} />
         ) : filteredOrders.length === 0 ? (
           <EmptyState type="empty-tab" activeTab={activeTab} />
         ) : (
