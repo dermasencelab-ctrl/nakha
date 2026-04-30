@@ -106,9 +106,8 @@ const Checkout = () => {
       });
       const results = await Promise.all(orderPromises);
       const orderIds = results.map((r) => r.id);
-      const phone = customerPhone;
       clearCart();
-      navigate(`/order-success?orderId=${orderIds.join(',')}&phone=${phone}`);
+      navigate('/order-success', { state: { orderIds, phone: customerPhone } });
     } catch (err) {
       console.error(err);
       setError('حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مرة أخرى');

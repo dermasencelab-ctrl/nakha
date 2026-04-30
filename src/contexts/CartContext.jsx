@@ -39,10 +39,9 @@ export const CartProvider = ({ children }) => {
       const existingIndex = prev.findIndex((item) => item.dishId === dish.id);
 
       if (existingIndex !== -1) {
-        // زيادة الكمية
-        const updated = [...prev];
-        updated[existingIndex].quantity += 1;
-        return updated;
+        return prev.map((item, i) =>
+          i === existingIndex ? { ...item, quantity: item.quantity + 1 } : item
+        );
       }
 
       // إضافة طبق جديد

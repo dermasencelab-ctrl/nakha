@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
 import {
   Mail,
   Lock,
@@ -41,9 +39,11 @@ const Login = () => {
       if (profile.role === 'admin') {
         navigate('/admin');
       } else if (profile.role === 'cook') {
-        const cookDoc = await getDoc(doc(db, 'cooks', profile.cookId));
-        if (cookDoc.exists() && cookDoc.data().status === 'approved') {
+        const status = profile.cookStatus;
+        if (status === 'approved') {
           navigate('/cook/dashboard');
+        } else if (status === 'rejected') {
+          navigate('/cook/rejected');
         } else {
           navigate('/cook/pending');
         }

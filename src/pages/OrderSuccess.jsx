@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   CheckCircle,
   Package,
@@ -15,11 +15,9 @@ import {
 } from 'lucide-react';
 
 function OrderSuccess() {
-  const [params] = useSearchParams();
-  const orderId = params.get('orderId');
-  const phone = params.get('phone');
-
-  const orderIds = orderId ? orderId.split(',') : [];
+  const { state } = useLocation();
+  const orderIds = state?.orderIds || [];
+  const phone = state?.phone || null;
   const multipleOrders = orderIds.length > 1;
 
   const [copiedId, setCopiedId] = useState(null);
@@ -272,15 +270,13 @@ function OrderSuccess() {
           className={`space-y-2.5 ${showContent ? 'animate-slide-up' : 'opacity-0'}`}
           style={{ animationDelay: '800ms' }}
         >
-          {phone && (
-            <Link
-              to={`/my-orders?phone=${phone}`}
-              className="flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all"
-            >
-              <Package className="w-4 h-4" strokeWidth={2.4} />
-              تتبّع طلباتي
-            </Link>
-          )}
+          <Link
+            to="/my-orders"
+            className="flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all"
+          >
+            <Package className="w-4 h-4" strokeWidth={2.4} />
+            تتبّع طلباتي
+          </Link>
 
           <Link
             to="/cooks"

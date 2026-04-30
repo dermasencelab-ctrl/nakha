@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  collection, query, where, onSnapshot, doc, getDoc, updateDoc,
-  addDoc, serverTimestamp, increment,
+  collection, query, where, onSnapshot, doc, updateDoc,
+  addDoc, serverTimestamp, increment, runTransaction,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { COMMISSION_RATE, FOUNDING_MEMBERS } from '../config/settings';
@@ -86,41 +86,51 @@ const CookOrders = () => {
       if (newStatus === 'ready' && userProfile?.cookId) {
         const totalPrice = order.totalPrice || calculateTotal(order);
         const cookRef = doc(db, 'cooks', userProfile.cookId);
-        const cookSnap = await getDoc(cookRef);
-        const cookData = cookSnap.data();
 
-        const balanceBefore = cookData?.balance || 0;
-        const freeOrdersRemaining = cookData?.freeOrdersRemaining || 0;
-        const isFoundingMember = cookData?.isFoundingMember || false;
+        // Use a transaction to prevent race conditions on balance deduction
+        let txLog = null;
+        await runTransaction(db, async (transaction) => {
+          const cookSnap = await transaction.get(cookRef);
+          const cookData = cookSnap.data() || {};
 
-        const isEligibleForFreeOrder =
-          isFoundingMember &&
-          freeOrdersRemaining > 0 &&
-          totalPrice <= FOUNDING_MEMBERS.maxFreeOrderAmount;
+          const balanceBefore = cookData.balance || 0;
+          const freeOrdersRemaining = cookData.freeOrdersRemaining || 0;
+          const isFoundingMember = cookData.isFoundingMember || false;
 
-        if (isEligibleForFreeOrder) {
-          await updateDoc(cookRef, {
-            freeOrdersRemaining: increment(-1),
-            freeOrdersUsed: increment(1),
-            totalOrders: increment(1),
-          });
+          const isEligibleForFreeOrder =
+            isFoundingMember &&
+            freeOrdersRemaining > 0 &&
+            totalPrice <= FOUNDING_MEMBERS.maxFreeOrderAmount;
+
+          if (isEligibleForFreeOrder) {
+            transaction.update(cookRef, {
+              freeOrdersRemaining: increment(-1),
+              freeOrdersUsed: increment(1),
+              totalOrders: increment(1),
+            });
+            txLog = { type: 'free_order', amount: 0, balanceBefore, balanceAfter: balanceBefore };
+          } else {
+            const commission = Math.round(totalPrice * COMMISSION_RATE);
+            const balanceAfter = balanceBefore - commission;
+            transaction.update(cookRef, {
+              balance: balanceAfter,
+              totalCommission: increment(commission),
+              totalOrders: increment(1),
+            });
+            txLog = { type: 'commission', amount: commission, balanceBefore, balanceAfter };
+          }
+        });
+
+        if (txLog) {
           await addDoc(collection(db, 'transactions'), {
-            cookId: userProfile.cookId, type: 'free_order', amount: 0,
-            orderId, orderTotal: totalPrice,
-            description: `طلب مجاني #${orderId.slice(0, 8).toUpperCase()}`,
-            balanceBefore, balanceAfter: balanceBefore, createdAt: serverTimestamp(),
-          });
-        } else {
-          const commission = Math.round(totalPrice * COMMISSION_RATE);
-          const balanceAfter = balanceBefore - commission;
-          await updateDoc(cookRef, {
-            balance: balanceAfter, totalCommission: increment(commission), totalOrders: increment(1),
-          });
-          await addDoc(collection(db, 'transactions'), {
-            cookId: userProfile.cookId, type: 'commission', amount: commission,
-            orderId, orderTotal: totalPrice,
-            description: `رسوم طلب #${orderId.slice(0, 8).toUpperCase()}`,
-            balanceBefore, balanceAfter, createdAt: serverTimestamp(),
+            cookId: userProfile.cookId,
+            orderId,
+            orderTotal: totalPrice,
+            description: txLog.type === 'free_order'
+              ? `طلب مجاني #${orderId.slice(0, 8).toUpperCase()}`
+              : `رسوم طلب #${orderId.slice(0, 8).toUpperCase()}`,
+            ...txLog,
+            createdAt: serverTimestamp(),
           });
         }
       }
