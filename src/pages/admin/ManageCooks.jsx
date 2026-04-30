@@ -6,7 +6,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { FOUNDING_MEMBERS } from '../../config/settings';
-import { ExternalLink, X as XIcon, ZoomIn } from 'lucide-react';
+import { ExternalLink, X as XIcon, ZoomIn, ArrowRight, ChefHat, CheckCircle, XCircle, Clock, Star, Package, Wallet, Eye } from 'lucide-react';
+
+const S = {
+  bg: { background: '#0D0B09', backgroundImage: 'radial-gradient(circle at 1px 1px, #2a2117 1px, transparent 0)', backgroundSize: '28px 28px' },
+  card: { background: 'linear-gradient(145deg, #1c1713 0%, #141110 100%)', border: '1px solid rgba(234,88,12,0.12)' },
+  modal: { background: '#1a1410', border: '1px solid rgba(234,88,12,0.22)', boxShadow: '0 25px 60px rgba(0,0,0,0.7)' },
+  input: { background: '#100e0c', border: '1px solid rgba(234,88,12,0.20)', color: '#d6d3d1' },
+  header: { background: 'rgba(13,11,9,0.88)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(234,88,12,0.12)' },
+};
 
 const getSocialEmoji = (url) => {
   if (!url) return '🔗';
@@ -15,13 +23,19 @@ const getSocialEmoji = (url) => {
   if (url.includes('tiktok')) return '🎵';
   return '🔗';
 };
-
 const getSocialLabel = (url) => {
   if (!url) return 'رابط التواصل';
   if (url.includes('instagram')) return 'إنستغرام';
   if (url.includes('facebook') || url.includes('fb.com')) return 'فيسبوك';
   if (url.includes('tiktok')) return 'تيك توك';
   return 'رابط التواصل';
+};
+
+const cookTypeLabels = {
+  home_cook: '👩‍🍳 طباخة حرة',
+  pastry: '🍰 حلويات',
+  traditional: '🍲 تقليدي',
+  healthy: '🥗 صحي',
 };
 
 const ManageCooks = () => {
@@ -32,26 +46,14 @@ const ManageCooks = () => {
   const [selectedCook, setSelectedCook] = useState(null);
   const [lightboxImg, setLightboxImg] = useState(null);
 
-  // أنواع الطباخات
-  const cookTypeLabels = {
-    home_cook: '👩‍🍳 طباخة حرة',
-    pastry: '🍰 حلويات ومعجنات',
-    traditional: '🍲 أكل تقليدي',
-    healthy: '🥗 أكل صحي',
-  };
-
   const fetchCooks = async () => {
     setLoading(true);
     try {
       const q = query(collection(db, 'cooks'), orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
-      const cooksData = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCooks(cooksData);
-    } catch (error) {
-      console.error('Error fetching cooks:', error);
-    } finally {
-      setLoading(false);
-    }
+      setCooks(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchCooks(); }, []);
@@ -61,13 +63,12 @@ const ManageCooks = () => {
     try {
       let foundingData = {};
       if (FOUNDING_MEMBERS.enabled) {
-        const foundingQuery = query(collection(db, 'cooks'), where('isFoundingMember', '==', true));
-        const foundingSnap = await getDocs(foundingQuery);
-        const foundingCount = foundingSnap.size;
-        if (foundingCount < FOUNDING_MEMBERS.maxCount) {
+        const fSnap = await getDocs(query(collection(db, 'cooks'), where('isFoundingMember', '==', true)));
+        const fCount = fSnap.size;
+        if (fCount < FOUNDING_MEMBERS.maxCount) {
           foundingData = {
             isFoundingMember: true,
-            foundingMemberNumber: foundingCount + 1,
+            foundingMemberNumber: fCount + 1,
             balance: FOUNDING_MEMBERS.welcomeBalance,
             freeOrdersRemaining: FOUNDING_MEMBERS.freeOrders,
             freeOrdersUsed: 0,
@@ -75,44 +76,29 @@ const ManageCooks = () => {
           };
         }
       }
-
-      await updateDoc(doc(db, 'cooks', cookId), {
-        status: 'approved', approvedAt: serverTimestamp(), ...foundingData,
-      });
-
+      await updateDoc(doc(db, 'cooks', cookId), { status: 'approved', approvedAt: serverTimestamp(), ...foundingData });
       if (foundingData.isFoundingMember) {
         await addDoc(collection(db, 'transactions'), {
-          cookId, type: 'welcome_bonus',
-          amount: FOUNDING_MEMBERS.welcomeBalance,
+          cookId, type: 'welcome_bonus', amount: FOUNDING_MEMBERS.welcomeBalance,
           description: `🎁 هدية ترحيبية - عضو مؤسسة #${foundingData.foundingMemberNumber}`,
-          balanceBefore: 0, balanceAfter: FOUNDING_MEMBERS.welcomeBalance,
-          createdAt: serverTimestamp(),
+          balanceBefore: 0, balanceAfter: FOUNDING_MEMBERS.welcomeBalance, createdAt: serverTimestamp(),
         });
-        alert(`✅ تم قبول الطباخة كعضو مؤسسة #${foundingData.foundingMemberNumber}!\n\n💰 ${FOUNDING_MEMBERS.welcomeBalance} دج رصيد\n🆓 ${FOUNDING_MEMBERS.freeOrders} طلبات بدون عمولة\n⭐ شارة عضو مؤسسة دائمة`);
-      } else {
-        alert('✅ تم قبول الطباخة بنجاح');
-      }
-
+        alert(`✅ تم قبول الطباخة كعضو مؤسسة #${foundingData.foundingMemberNumber}!`);
+      } else { alert('✅ تم قبول الطباخة بنجاح'); }
       setSelectedCook(null);
       await fetchCooks();
-    } catch (error) {
-      console.error(error);
-      alert('حدث خطأ أثناء القبول');
-    } finally {
-      setActionLoading(null);
-    }
+    } catch (e) { console.error(e); alert('حدث خطأ'); }
+    finally { setActionLoading(null); }
   };
 
   const handleReject = async (cookId) => {
     const reason = prompt('سبب الرفض (اختياري):');
     setActionLoading(cookId);
     try {
-      await updateDoc(doc(db, 'cooks', cookId), {
-        status: 'rejected', rejectionReason: reason || '',
-      });
+      await updateDoc(doc(db, 'cooks', cookId), { status: 'rejected', rejectionReason: reason || '' });
       setSelectedCook(null);
       await fetchCooks();
-    } catch (error) { console.error(error); alert('حدث خطأ'); }
+    } catch (e) { console.error(e); alert('حدث خطأ'); }
     finally { setActionLoading(null); }
   };
 
@@ -121,7 +107,7 @@ const ManageCooks = () => {
     try {
       await updateDoc(doc(db, 'cooks', cookId), { status: 'approved', approvedAt: serverTimestamp() });
       await fetchCooks();
-    } catch (error) { console.error(error); }
+    } catch (e) { console.error(e); }
     finally { setActionLoading(null); }
   };
 
@@ -131,7 +117,7 @@ const ManageCooks = () => {
     try {
       await updateDoc(doc(db, 'cooks', cookId), { status: 'pending' });
       await fetchCooks();
-    } catch (error) { console.error(error); }
+    } catch (e) { console.error(e); }
     finally { setActionLoading(null); }
   };
 
@@ -143,175 +129,173 @@ const ManageCooks = () => {
       await deleteDoc(doc(db, 'users', cookId));
       setSelectedCook(null);
       await fetchCooks();
-    } catch (error) { console.error(error); alert('حدث خطأ'); }
+    } catch (e) { console.error(e); alert('حدث خطأ'); }
     finally { setActionLoading(null); }
   };
 
   const foundingCount = cooks.filter((c) => c.isFoundingMember).length;
   const foundingSpotsLeft = FOUNDING_MEMBERS.maxCount - foundingCount;
-  const filteredCooks = cooks.filter((cook) => cook.status === activeTab);
+  const filteredCooks = cooks.filter((c) => c.status === activeTab);
   const counts = {
     pending: cooks.filter((c) => c.status === 'pending').length,
     approved: cooks.filter((c) => c.status === 'approved').length,
     rejected: cooks.filter((c) => c.status === 'rejected').length,
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4" dir="rtl">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">إدارة الطباخات</h1>
-          <Link to="/admin" className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
-            ← لوحة التحكم
-          </Link>
-        </div>
+  const TABS = [
+    { key: 'pending', label: 'معلّقات', icon: Clock, accent: '#f59e0b', count: counts.pending },
+    { key: 'approved', label: 'معتمدات', icon: CheckCircle, accent: '#10b981', count: counts.approved },
+    { key: 'rejected', label: 'مرفوضات', icon: XCircle, accent: '#ef4444', count: counts.rejected },
+  ];
 
-        {/* بانر المؤسسين */}
+  return (
+    <div dir="rtl" className="min-h-screen pb-12" style={S.bg}>
+      {/* Header */}
+      <header className="sticky top-0 z-40" style={S.header}>
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
+          <Link to="/admin" className="w-9 h-9 rounded-xl flex items-center justify-center transition hover:bg-orange-500/10" style={S.card}>
+            <ArrowRight className="w-4 h-4 text-stone-300" strokeWidth={2.4} />
+          </Link>
+          <h1 className="text-base font-black text-stone-100">إدارة الطباخات</h1>
+          <span className="mr-auto text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(249,115,22,0.12)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.2)' }}>
+            {cooks.length} طباخة
+          </span>
+        </div>
+      </header>
+
+      <div className="max-w-6xl mx-auto px-4 pt-6 space-y-5">
+
+        {/* Founding members banner */}
         {FOUNDING_MEMBERS.enabled && (
-          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl p-4 mb-6 shadow-md">
+          <div className="rounded-2xl p-4 animate-slide-up" style={{ background: 'linear-gradient(135deg, #1f1508, #251a08)', border: '1px solid rgba(251,191,36,0.25)', boxShadow: '0 0 30px rgba(251,191,36,0.08)' }}>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="text-3xl">🎁</div>
                 <div>
-                  <p className="font-bold text-lg">عرض المؤسسين</p>
-                  <p className="text-sm text-white/90">{foundingCount} / {FOUNDING_MEMBERS.maxCount} طباخة انضمت</p>
+                  <p className="font-black text-amber-300 text-sm">عرض المؤسسين النشط</p>
+                  <p className="text-[11px] text-amber-500/70">{foundingCount} من {FOUNDING_MEMBERS.maxCount} طباخة انضمت</p>
                 </div>
               </div>
-              <div className="bg-white/20 backdrop-blur px-4 py-2 rounded-lg">
-                <p className="text-xs">المتبقي</p>
-                <p className="font-bold text-2xl">{foundingSpotsLeft > 0 ? `${foundingSpotsLeft} مكان` : 'انتهى العرض'}</p>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl" style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.2)' }}>
+                <span className="text-xs text-amber-400/70">المتبقي</span>
+                <span className="text-lg font-black text-amber-300">{foundingSpotsLeft > 0 ? `${foundingSpotsLeft} مكان` : 'انتهى'}</span>
               </div>
+            </div>
+            {/* Progress bar */}
+            <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(251,191,36,0.1)' }}>
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(foundingCount / FOUNDING_MEMBERS.maxCount) * 100}%`, background: 'linear-gradient(90deg, #f59e0b, #fbbf24)' }} />
             </div>
           </div>
         )}
 
-        {/* التبويبات */}
-        <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2">
-          <button onClick={() => setActiveTab('pending')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${activeTab === 'pending' ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-            ⏳ معلّقات
-            {counts.pending > 0 && <span className="mr-2 bg-white text-orange-600 px-2 py-0.5 rounded-full text-sm">{counts.pending}</span>}
-          </button>
-          <button onClick={() => setActiveTab('approved')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${activeTab === 'approved' ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-            ✅ معتمدات ({counts.approved})
-          </button>
-          <button onClick={() => setActiveTab('rejected')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold transition ${activeTab === 'rejected' ? 'bg-red-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-            ❌ مرفوضات ({counts.rejected})
-          </button>
+        {/* Tabs */}
+        <div className="flex gap-1.5 p-1.5 rounded-2xl animate-slide-up" style={{ animationDelay: '80ms', background: '#100e0c', border: '1px solid rgba(234,88,12,0.10)' }}>
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all"
+                style={isActive ? { background: `${tab.accent}20`, color: tab.accent, border: `1px solid ${tab.accent}35` } : { color: '#78716c', border: '1px solid transparent' }}>
+                <Icon className="w-4 h-4" strokeWidth={2.3} />
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="min-w-[20px] h-5 px-1 rounded-full text-[10px] font-black flex items-center justify-center"
+                    style={{ background: isActive ? `${tab.accent}25` : '#1c1713', color: isActive ? tab.accent : '#6b7280' }}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* القائمة */}
+        {/* List */}
         {loading ? (
-          <div className="text-center py-12 text-gray-500">جاري التحميل...</div>
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <div key={i} className="h-24 rounded-2xl animate-pulse" style={{ background: '#1c1713' }} />)}
+          </div>
         ) : filteredCooks.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <div className="text-5xl mb-4">📭</div>
-            <p className="text-gray-500">
+          <div className="rounded-2xl p-12 text-center animate-slide-up" style={S.card}>
+            <div className="text-5xl mb-3">📭</div>
+            <p className="text-stone-500 text-sm">
               {activeTab === 'pending' && 'لا توجد طلبات معلّقة حالياً'}
               {activeTab === 'approved' && 'لا توجد طباخات معتمدات بعد'}
               {activeTab === 'rejected' && 'لا توجد طباخات مرفوضات'}
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {filteredCooks.map((cook) => (
-              <div key={cook.id}
-                className={`bg-white rounded-xl shadow-sm p-5 border ${cook.isFoundingMember ? 'border-yellow-300 border-2' : 'border-gray-100'}`}>
+          <div className="space-y-3">
+            {filteredCooks.map((cook, i) => (
+              <div key={cook.id} className="rounded-2xl p-4 animate-slide-up transition-all duration-200 hover:border-orange-500/25"
+                style={{ ...S.card, animationDelay: `${i * 50}ms`, border: cook.isFoundingMember ? '1px solid rgba(251,191,36,0.30)' : S.card.border }}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* صورة + معلومات أساسية */}
                   <div className="flex items-start gap-4 flex-1">
-                    {cook.photo ? (
-                      <img src={cook.photo} alt={cook.name} className="w-16 h-16 rounded-full object-cover border-2 border-orange-200 flex-shrink-0" />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-200 to-amber-300 flex items-center justify-center text-3xl flex-shrink-0">👩‍🍳</div>
-                    )}
+                    {cook.photo
+                      ? <img src={cook.photo} alt={cook.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" style={{ border: '2px solid rgba(234,88,12,0.25)' }} />
+                      : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.2)' }}>👩‍🍳</div>
+                    }
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-xl font-bold text-gray-800">{cook.name}</h3>
+                        <h3 className="font-black text-stone-100">{cook.name}</h3>
                         {cook.isFoundingMember && (
-                          <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">⭐ #{cook.foundingMemberNumber}</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+                            ⭐ #{cook.foundingMemberNumber}
+                          </span>
                         )}
                         {cook.cookType && (
-                          <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(249,115,22,0.10)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.18)' }}>
                             {cookTypeLabels[cook.cookType] || cook.cookType}
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-600 space-y-0.5">
-                        <p>📍 {cook.neighborhood} &nbsp;|&nbsp; 📱 <span dir="ltr">{cook.phone}</span></p>
-                        {cook.specialties?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {cook.specialties.slice(0, 4).map(s => (
-                              <span key={s} className="bg-orange-50 text-orange-700 text-xs px-2 py-0.5 rounded-full">{s}</span>
-                            ))}
-                            {cook.specialties.length > 4 && (
-                              <span className="text-xs text-gray-500">+{cook.specialties.length - 4} أخرى</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* إحصائيات للمعتمدات */}
+                      <p className="text-xs text-stone-500">📍 {cook.neighborhood} &nbsp;•&nbsp; 📱 <span dir="ltr">{cook.phone}</span></p>
                       {activeTab === 'approved' && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-lg text-xs font-bold">💰 {cook.balance || 0} دج</span>
-                          <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold">📦 {cook.totalOrders || 0} طلب</span>
-                          {cook.averageRating > 0 && (
-                            <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-lg text-xs font-bold">⭐ {cook.averageRating?.toFixed(1)}</span>
-                          )}
-                          {cook.isFoundingMember && (
-                            <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold">🆓 {cook.freeOrdersRemaining || 0} مجانية</span>
-                          )}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>💰 {cook.balance || 0} دج</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.2)' }}>📦 {cook.totalOrders || 0} طلب</span>
+                          {cook.averageRating > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>⭐ {cook.averageRating?.toFixed(1)}</span>}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* الأزرار */}
-                  <div className="flex flex-col gap-2 md:w-44">
-                    {/* زر عرض التفاصيل — يظهر دائماً */}
+                  <div className="flex flex-wrap md:flex-col gap-2 md:w-40">
                     <button onClick={() => setSelectedCook(cook)}
-                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-bold hover:bg-gray-200 transition text-sm">
+                      className="flex-1 md:flex-none py-2 px-3 rounded-xl text-xs font-bold transition hover:border-orange-500/40"
+                      style={{ background: 'rgba(234,88,12,0.08)', color: '#fb923c', border: '1px solid rgba(234,88,12,0.18)' }}>
                       🔍 عرض التفاصيل
                     </button>
-
                     {activeTab === 'pending' && (
                       <>
                         <button onClick={() => handleApprove(cook.id)} disabled={actionLoading === cook.id}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50">
+                          className="flex-1 md:flex-none py-2 px-3 rounded-xl text-xs font-bold transition disabled:opacity-40"
+                          style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
                           {actionLoading === cook.id ? '...' : '✅ قبول'}
                         </button>
                         <button onClick={() => handleReject(cook.id)} disabled={actionLoading === cook.id}
-                          className="bg-red-100 text-red-700 px-4 py-2 rounded-lg font-bold hover:bg-red-200 transition disabled:opacity-50">
+                          className="flex-1 md:flex-none py-2 px-3 rounded-xl text-xs font-bold transition disabled:opacity-40"
+                          style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.22)' }}>
                           ❌ رفض
                         </button>
                       </>
                     )}
-
                     {activeTab === 'approved' && (
-                      <>
-                        <Link to={`/cooks/${cook.id}`}
-                          className="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg font-bold hover:bg-orange-200 transition text-center text-sm">
-                          👁️ الملف العام
-                        </Link>
-                        <button onClick={() => handleSuspend(cook.id)} disabled={actionLoading === cook.id}
-                          className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg font-bold hover:bg-yellow-200 transition disabled:opacity-50 text-sm">
-                          ⏸️ إيقاف
-                        </button>
-                      </>
+                      <button onClick={() => handleSuspend(cook.id)} disabled={actionLoading === cook.id}
+                        className="flex-1 md:flex-none py-2 px-3 rounded-xl text-xs font-bold transition disabled:opacity-40"
+                        style={{ background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.22)' }}>
+                        ⏸️ إيقاف
+                      </button>
                     )}
-
                     {activeTab === 'rejected' && (
                       <button onClick={() => handleReapprove(cook.id)} disabled={actionLoading === cook.id}
-                        className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-200 transition disabled:opacity-50">
+                        className="flex-1 md:flex-none py-2 px-3 rounded-xl text-xs font-bold transition disabled:opacity-40"
+                        style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.22)' }}>
                         ↩️ إعادة قبول
                       </button>
                     )}
-
                     <button onClick={() => handleDelete(cook.id)} disabled={actionLoading === cook.id}
-                      className="text-red-500 text-xs hover:underline mt-1">
+                      className="text-[11px] text-red-500/60 hover:text-red-400 transition text-center py-1">
                       🗑️ حذف نهائي
                     </button>
                   </div>
@@ -320,193 +304,197 @@ const ManageCooks = () => {
             ))}
           </div>
         )}
+      </div>
 
-        {/* ═══════ Modal عرض تفاصيل الطباخة ═══════ */}
-        {selectedCook && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800">ملف الطباخة</h2>
-                  <button onClick={() => setSelectedCook(null)} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      {/* Detail Modal */}
+      {selectedCook && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setSelectedCook(null)}>
+          <div className="w-full md:max-w-2xl max-h-[90vh] overflow-y-auto md:rounded-2xl rounded-t-2xl"
+            style={S.modal} onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 flex items-center justify-between p-4 border-b" style={{ background: '#1a1410', borderColor: 'rgba(234,88,12,0.12)' }}>
+              <h2 className="font-black text-stone-100">ملف الطباخة</h2>
+              <button onClick={() => setSelectedCook(null)} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-orange-500/10 transition" style={{ border: '1px solid rgba(234,88,12,0.2)' }}>
+                <XIcon className="w-4 h-4 text-stone-400" strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Photo + name */}
+              <div className="flex items-center gap-4">
+                {selectedCook.photo
+                  ? <img src={selectedCook.photo} alt={selectedCook.name} className="w-20 h-20 rounded-2xl object-cover" style={{ border: '2px solid rgba(234,88,12,0.3)' }} />
+                  : <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl" style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>👩‍🍳</div>
+                }
+                <div>
+                  <h3 className="text-xl font-black text-stone-100">{selectedCook.name}</h3>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block mt-1" style={{ background: 'rgba(249,115,22,0.1)', color: '#fb923c' }}>
+                    {cookTypeLabels[selectedCook.cookType] || selectedCook.cookType}
+                  </span>
+                  <p className={`text-xs font-bold mt-1 ${selectedCook.status === 'approved' ? 'text-emerald-400' : selectedCook.status === 'rejected' ? 'text-red-400' : 'text-amber-400'}`}>
+                    {selectedCook.status === 'approved' ? '✅ معتمدة' : selectedCook.status === 'rejected' ? '❌ مرفوضة' : '⏳ معلّقة'}
+                  </p>
                 </div>
+              </div>
 
-                {/* الصورة الشخصية + الاسم */}
-                <div className="flex items-center gap-4 mb-6">
-                  {selectedCook.photo ? (
-                    <img src={selectedCook.photo} alt={selectedCook.name} className="w-24 h-24 rounded-full object-cover border-3 border-orange-300" />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-200 to-amber-300 flex items-center justify-center text-5xl">👩‍🍳</div>
-                  )}
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-800">{selectedCook.name}</h3>
-                    {selectedCook.cookType && (
-                      <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium mt-1 inline-block">
-                        {cookTypeLabels[selectedCook.cookType] || selectedCook.cookType}
-                      </span>
-                    )}
-                    <p className={`text-sm mt-1 font-bold ${
-                      selectedCook.status === 'approved' ? 'text-green-600' :
-                      selectedCook.status === 'rejected' ? 'text-red-600' : 'text-orange-600'
-                    }`}>
-                      {selectedCook.status === 'approved' ? '✅ معتمدة' :
-                       selectedCook.status === 'rejected' ? '❌ مرفوضة' : '⏳ معلّقة'}
-                    </p>
+              {/* Info */}
+              <InfoSection title="📋 المعلومات الأساسية">
+                <InfoRow label="الحي" value={selectedCook.neighborhood} />
+                <InfoRow label="الهاتف" value={selectedCook.phone} ltr />
+                {selectedCook.bio && <InfoRow label="النبذة" value={selectedCook.bio} />}
+              </InfoSection>
+
+              {/* Specialties */}
+              {selectedCook.specialties?.length > 0 && (
+                <InfoSection title="🍽️ التخصصات">
+                  <div className="flex flex-wrap gap-1.5 p-3">
+                    {selectedCook.specialties.map(s => (
+                      <span key={s} className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(249,115,22,0.10)', color: '#fb923c', border: '1px solid rgba(249,115,22,0.18)' }}>{s}</span>
+                    ))}
                   </div>
-                </div>
+                </InfoSection>
+              )}
 
-                {/* المعلومات الأساسية */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
-                  <h4 className="font-bold text-gray-700 mb-2">📋 المعلومات الأساسية</h4>
-                  <p className="text-sm"><span className="font-medium text-gray-600">📍 الحي:</span> {selectedCook.neighborhood}</p>
-                  <p className="text-sm"><span className="font-medium text-gray-600">📱 الهاتف:</span> <span dir="ltr">{selectedCook.phone}</span></p>
-                  {selectedCook.bio && (
-                    <p className="text-sm"><span className="font-medium text-gray-600">📝 نبذة:</span> {selectedCook.bio}</p>
-                  )}
-                </div>
-
-                {/* التخصصات */}
-                {selectedCook.specialties?.length > 0 && (
-                  <div className="bg-orange-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-gray-700 mb-2">🍽️ التخصصات</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCook.specialties.map(s => (
-                        <span key={s} className="bg-white text-orange-700 px-3 py-1 rounded-full text-sm font-medium border border-orange-200">{s}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* رابط السوشيال ميديا */}
-                {selectedCook.socialLink && (
-                  <div className="bg-blue-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-gray-700 mb-2">🔗 صفحة التواصل الاجتماعي</h4>
+              {/* Social link */}
+              {selectedCook.socialLink && (
+                <InfoSection title="🔗 التواصل الاجتماعي">
+                  <div className="p-3">
                     <a href={selectedCook.socialLink} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-white border border-blue-200 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100 transition text-sm font-bold">
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition hover:opacity-80"
+                      style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.22)' }}>
                       <span>{getSocialEmoji(selectedCook.socialLink)}</span>
-                      {getSocialLabel(selectedCook.socialLink)} — اضغط للفتح
-                      <ExternalLink className="w-3 h-3 opacity-60" />
+                      {getSocialLabel(selectedCook.socialLink)}
+                      <ExternalLink className="w-3 h-3" strokeWidth={2} />
                     </a>
                   </div>
-                )}
+                </InfoSection>
+              )}
 
-                {/* صور الأعمال السابقة */}
-                {selectedCook.portfolioImages?.length > 0 ? (
-                  <div className="bg-green-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-gray-700 mb-3">📸 صور أعمال سابقة ({selectedCook.portfolioImages.length})</h4>
-                    <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                      {selectedCook.portfolioImages.map((img, index) => (
-                        <button key={index} type="button" onClick={() => setLightboxImg(img)}
-                          className="relative group aspect-square overflow-hidden rounded-lg border-2 border-white shadow hover:shadow-lg transition">
-                          <img src={img} alt={`عمل ${index + 1}`}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <ZoomIn className="w-5 h-5 text-white" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-stone-50 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-stone-500 text-center">لم تحمّل صور أعمال بعد</p>
-                  </div>
-                )}
-
-                {/* تحذير: لا صور ولا رابط */}
-                {!selectedCook.socialLink && (!selectedCook.portfolioImages || selectedCook.portfolioImages.length === 0) && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-yellow-800">
-                      ⚠️ هذه الطباخة لم تقدّم رابط سوشيال ميديا ولا صور أعمال سابقة. تأكد من جودتها قبل القبول.
-                    </p>
-                  </div>
-                )}
-
-                {/* إحصائيات (للمعتمدات) */}
-                {selectedCook.status === 'approved' && (
-                  <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-gray-700 mb-2">📊 الإحصائيات</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-white p-3 rounded-lg text-center">
-                        <p className="text-xs text-gray-500">الرصيد</p>
-                        <p className="font-bold text-green-600">{selectedCook.balance || 0} دج</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg text-center">
-                        <p className="text-xs text-gray-500">الطلبات</p>
-                        <p className="font-bold text-blue-600">{selectedCook.totalOrders || 0}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg text-center">
-                        <p className="text-xs text-gray-500">التقييم</p>
-                        <p className="font-bold text-yellow-600">{selectedCook.averageRating?.toFixed(1) || '-'}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-lg text-center">
-                        <p className="text-xs text-gray-500">العمولات</p>
-                        <p className="font-bold text-red-600">{selectedCook.totalCommission || 0} دج</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* سبب الرفض (للمرفوضات) */}
-                {selectedCook.status === 'rejected' && selectedCook.rejectionReason && (
-                  <div className="bg-red-50 rounded-xl p-4 mb-4">
-                    <h4 className="font-bold text-red-700 mb-1">❌ سبب الرفض</h4>
-                    <p className="text-sm text-red-600">{selectedCook.rejectionReason}</p>
-                  </div>
-                )}
-
-                {/* أزرار الإجراءات */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
-                  {selectedCook.status === 'pending' && (
-                    <>
-                      <button onClick={() => handleApprove(selectedCook.id)} disabled={actionLoading === selectedCook.id}
-                        className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50">
-                        {actionLoading === selectedCook.id ? 'جاري القبول...' : '✅ قبول الطباخة'}
+              {/* Portfolio */}
+              {selectedCook.portfolioImages?.length > 0 ? (
+                <InfoSection title={`📸 أعمال سابقة (${selectedCook.portfolioImages.length})`}>
+                  <div className="grid grid-cols-4 gap-2 p-3">
+                    {selectedCook.portfolioImages.map((img, i) => (
+                      <button key={i} type="button" onClick={() => setLightboxImg(img)}
+                        className="relative aspect-square overflow-hidden rounded-xl group transition hover:scale-105">
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                          <ZoomIn className="w-5 h-5 text-white" strokeWidth={2} />
+                        </div>
                       </button>
-                      <button onClick={() => handleReject(selectedCook.id)} disabled={actionLoading === selectedCook.id}
-                        className="flex-1 bg-red-100 text-red-700 px-6 py-3 rounded-lg font-bold hover:bg-red-200 transition disabled:opacity-50">
-                        ❌ رفض
-                      </button>
-                    </>
-                  )}
-                  {selectedCook.status === 'approved' && (
-                    <button onClick={() => handleSuspend(selectedCook.id)} disabled={actionLoading === selectedCook.id}
-                      className="flex-1 bg-yellow-100 text-yellow-700 px-6 py-3 rounded-lg font-bold hover:bg-yellow-200 transition">
-                      ⏸️ إيقاف مؤقت
-                    </button>
-                  )}
-                  {selectedCook.status === 'rejected' && (
-                    <button onClick={() => handleReapprove(selectedCook.id)} disabled={actionLoading === selectedCook.id}
-                      className="flex-1 bg-green-100 text-green-700 px-6 py-3 rounded-lg font-bold hover:bg-green-200 transition">
-                      ↩️ إعادة قبول
-                    </button>
-                  )}
-                  <button onClick={() => setSelectedCook(null)}
-                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 transition">
-                    إغلاق
-                  </button>
+                    ))}
+                  </div>
+                </InfoSection>
+              ) : (
+                <div className="rounded-xl p-4 text-center" style={{ background: 'rgba(120,113,108,0.08)', border: '1px solid rgba(120,113,108,0.12)' }}>
+                  <p className="text-xs text-stone-600">لم تحمّل صور أعمال بعد</p>
                 </div>
+              )}
+
+              {/* Warning no portfolio/social */}
+              {!selectedCook.socialLink && (!selectedCook.portfolioImages || selectedCook.portfolioImages.length === 0) && (
+                <div className="rounded-xl p-3 text-xs font-bold" style={{ background: 'rgba(245,158,11,0.10)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.22)' }}>
+                  ⚠️ لا توجد صور أعمال ولا رابط تواصل — تأكد من المراجعة قبل القبول
+                </div>
+              )}
+
+              {/* Stats for approved */}
+              {selectedCook.status === 'approved' && (
+                <InfoSection title="📊 الإحصائيات">
+                  <div className="grid grid-cols-4 gap-2 p-3">
+                    {[
+                      { label: 'الرصيد', value: `${selectedCook.balance || 0} دج`, color: '#34d399' },
+                      { label: 'الطلبات', value: selectedCook.totalOrders || 0, color: '#60a5fa' },
+                      { label: 'التقييم', value: selectedCook.averageRating?.toFixed(1) || '-', color: '#fbbf24' },
+                      { label: 'العمولات', value: `${selectedCook.totalCommission || 0} دج`, color: '#f87171' },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: '#100e0c' }}>
+                        <p className="text-[10px] text-stone-600 mb-1">{s.label}</p>
+                        <p className="text-sm font-black" style={{ color: s.color }}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </InfoSection>
+              )}
+
+              {/* Rejection reason */}
+              {selectedCook.status === 'rejected' && selectedCook.rejectionReason && (
+                <div className="rounded-xl p-3 text-xs" style={{ background: 'rgba(239,68,68,0.10)', color: '#f87171', border: '1px solid rgba(239,68,68,0.22)' }}>
+                  <span className="font-black">سبب الرفض: </span>{selectedCook.rejectionReason}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 pt-3 border-t" style={{ borderColor: 'rgba(234,88,12,0.12)' }}>
+                {selectedCook.status === 'pending' && (
+                  <>
+                    <button onClick={() => handleApprove(selectedCook.id)} disabled={actionLoading === selectedCook.id}
+                      className="flex-1 py-3 rounded-xl font-black text-sm transition disabled:opacity-40"
+                      style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }}>
+                      {actionLoading === selectedCook.id ? 'جاري القبول...' : '✅ قبول الطباخة'}
+                    </button>
+                    <button onClick={() => handleReject(selectedCook.id)} disabled={actionLoading === selectedCook.id}
+                      className="flex-1 py-3 rounded-xl font-black text-sm transition disabled:opacity-40"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.22)' }}>
+                      ❌ رفض
+                    </button>
+                  </>
+                )}
+                {selectedCook.status === 'approved' && (
+                  <button onClick={() => handleSuspend(selectedCook.id)} disabled={actionLoading === selectedCook.id}
+                    className="flex-1 py-3 rounded-xl font-black text-sm transition"
+                    style={{ background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.22)' }}>
+                    ⏸️ إيقاف مؤقت
+                  </button>
+                )}
+                {selectedCook.status === 'rejected' && (
+                  <button onClick={() => handleReapprove(selectedCook.id)} disabled={actionLoading === selectedCook.id}
+                    className="flex-1 py-3 rounded-xl font-black text-sm transition"
+                    style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.22)' }}>
+                    ↩️ إعادة قبول
+                  </button>
+                )}
+                <button onClick={() => setSelectedCook(null)}
+                  className="px-5 py-3 rounded-xl font-bold text-sm text-stone-500 hover:text-stone-300 transition"
+                  style={{ border: '1px solid rgba(120,113,108,0.2)' }}>
+                  إغلاق
+                </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Lightbox معاينة الصورة */}
+      {/* Lightbox */}
       {lightboxImg && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
-          onClick={() => setLightboxImg(null)}>
-          <button onClick={() => setLightboxImg(null)}
-            className="absolute top-4 left-4 w-10 h-10 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition">
-            <XIcon className="w-5 h-5 text-white" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setLightboxImg(null)}>
+          <button onClick={() => setLightboxImg(null)} className="absolute top-4 left-4 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.1)' }}>
+            <XIcon className="w-5 h-5 text-white" strokeWidth={2.5} />
           </button>
-          <img src={lightboxImg} alt="معاينة" onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" />
+          <img src={lightboxImg} alt="" onClick={e => e.stopPropagation()} className="max-w-full max-h-[90vh] object-contain rounded-2xl" style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.8)' }} />
         </div>
       )}
     </div>
   );
 };
+
+function InfoSection({ title, children }) {
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(234,88,12,0.10)' }}>
+      <div className="px-3 py-2 text-xs font-black text-stone-400" style={{ background: '#100e0c' }}>{title}</div>
+      <div style={{ background: '#141110' }}>{children}</div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value, ltr }) {
+  return (
+    <div className="flex items-center justify-between px-3 py-2.5 border-t" style={{ borderColor: 'rgba(234,88,12,0.08)' }}>
+      <span className="text-[11px] text-stone-600">{label}</span>
+      <span className="text-xs font-bold text-stone-300" dir={ltr ? 'ltr' : undefined}>{value}</span>
+    </div>
+  );
+}
 
 export default ManageCooks;
