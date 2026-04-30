@@ -28,10 +28,15 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/" replace />;
   }
 
-  // طباخة لكن لسة pending
+  // Cooks must be approved before accessing any cook route
   if (userProfile.role === 'cook') {
-    // نحتاج جلب status من cooks (سنتعامل معها داخل CookDashboard لاحقاً)
-    // هنا فقط نسمح بالوصول، والتحقق من status يتم في الصفحة نفسها
+    const cookStatus = userProfile.cookStatus;
+    if (cookStatus === 'pending') {
+      return <Navigate to="/cook/pending" replace />;
+    }
+    if (cookStatus === 'rejected') {
+      return <Navigate to="/cook/rejected" replace />;
+    }
   }
 
   return children;

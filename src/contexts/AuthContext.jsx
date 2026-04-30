@@ -35,7 +35,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
-        return userDoc.data();
+        const profileData = userDoc.data();
+        // For cooks, attach current approval status from cooks collection
+        if (profileData.role === 'cook') {
+          const cookDoc = await getDoc(doc(db, 'cooks', user.uid));
+          profileData.cookStatus = cookDoc.exists()
+            ? (cookDoc.data().status || 'pending')
+            : 'pending';
+        }
+        return profileData;
       }
       return null;
     } catch (error) {
