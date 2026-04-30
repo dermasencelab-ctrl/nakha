@@ -192,7 +192,7 @@ const CookSignup = () => {
         bio: formData.bio.trim(),
         photo: formData.photo,
         cookType: formData.cookType,
-        specialties: [],
+        specialties: formData.specialties,
         cookDescription: formData.cookDescription.trim(),
         socialLink: formData.socialLink.trim(),
         portfolioImages: formData.portfolioImages,

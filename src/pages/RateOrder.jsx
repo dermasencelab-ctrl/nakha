@@ -6,7 +6,7 @@ import {
   addDoc,
   collection,
   updateDoc,
-  increment,
+  runTransaction,
   serverTimestamp,
   query,
   where,
@@ -75,22 +75,20 @@ const RateOrder = () => {
         createdAt: serverTimestamp(),
       });
 
-      // تحديث إحصائيات الطباخة
+      // تحديث إحصائيات الطباخة (transaction لمنع race condition)
       const cookRef = doc(db, 'cooks', order.cookId);
-      const cookDoc = await getDoc(cookRef);
-
-      if (cookDoc.exists()) {
-        const data = cookDoc.data();
-        const newRatingSum = (data.ratingSum || 0) + rating;
-        const newTotalRatings = (data.totalRatings || 0) + 1;
-        const newAverage = newRatingSum / newTotalRatings;
-
-        await updateDoc(cookRef, {
-          ratingSum: newRatingSum,
-          totalRatings: newTotalRatings,
-          averageRating: parseFloat(newAverage.toFixed(2)),
+      await runTransaction(db, async (transaction) => {
+        const cookSnap = await transaction.get(cookRef);
+        if (!cookSnap.exists()) return;
+        const data = cookSnap.data();
+        const newSum = (data.ratingSum || 0) + rating;
+        const newTotal = (data.totalRatings || 0) + 1;
+        transaction.update(cookRef, {
+          ratingSum: newSum,
+          totalRatings: newTotal,
+          averageRating: parseFloat((newSum / newTotal).toFixed(2)),
         });
-      }
+      });
 
       // تحديث الطلب ليدل على أنه قُيّم
       await updateDoc(doc(db, 'orders', orderId), {
