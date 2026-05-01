@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
 
   // تسجيل زبون جديد (بالهاتف وكلمة المرور)
   const signupCustomer = async (phone, password) => {
-    // التحقق من عدم تكرار رقم الهاتف
+    // التحقق من عدم تكرار رقم الهاتف في Firestore
     const phoneQuery = query(collection(db, 'customers'), where('phone', '==', phone));
     const phoneSnap = await getDocs(phoneQuery);
     if (!phoneSnap.empty) {
@@ -146,7 +146,19 @@ export const AuthProvider = ({ children }) => {
     }
 
     const email = phoneToEmail(phone);
-    const result = await createUserWithEmailAndPassword(auth, email, password);
+    let result;
+    try {
+      result = await createUserWithEmailAndPassword(auth, email, password);
+    } catch (firebaseErr) {
+      // Firebase throws email-already-in-use when the derived email is taken;
+      // map it to phone-already-in-use so the UI shows the correct message.
+      if (firebaseErr.code === 'auth/email-already-in-use') {
+        const err = new Error('رقم الهاتف مسجّل مسبقاً');
+        err.code = 'auth/phone-already-in-use';
+        throw err;
+      }
+      throw firebaseErr;
+    }
     const user = result.user;
 
     const customerData = {

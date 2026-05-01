@@ -221,7 +221,7 @@ const CookEditProfile = () => {
     return (
       <div
         dir="rtl"
-        className="min-h-screen bg-[#FFF8F0] flex items-center justify-center"
+        className="min-h-screen bg-[#FFF5E6] flex items-center justify-center"
       >
         <div className="text-center">
           <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-3" />
@@ -234,10 +234,10 @@ const CookEditProfile = () => {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[#FFF8F0] pb-32 md:pb-10"
+      className="min-h-screen bg-[#FFF5E6] pb-44 md:pb-24"
     >
       {/* Header */}
-      <header className="sticky top-16 z-20 bg-[#FFF8F0]/95 backdrop-blur-md">
+      <header className="sticky top-16 z-20 bg-[#FFF5E6]/95 backdrop-blur-md">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link
             to="/cook/dashboard"
@@ -505,7 +505,7 @@ const CookEditProfile = () => {
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {/* شريط الحفظ السفلي الثابت */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 md:pb-4 pointer-events-none">
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 px-3 pb-3 md:pb-4 pointer-events-none">
         <div className="max-w-2xl mx-auto pointer-events-auto">
           <div className="bg-white rounded-3xl shadow-2xl shadow-stone-900/10 border border-stone-100 p-3">
             <div className="flex gap-2">
