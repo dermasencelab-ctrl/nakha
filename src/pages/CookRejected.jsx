@@ -20,7 +20,7 @@ export default function CookRejected() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] flex items-center justify-center p-4">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] flex items-center justify-center p-4">
       {/* Blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-red-100/60 rounded-full blur-3xl" />

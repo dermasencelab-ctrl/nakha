@@ -57,7 +57,7 @@ function OrderSuccess() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-green-50 pb-24 md:pb-8"
+      className="min-h-screen relative overflow-hidden bg-[#FFF5E6] pb-24 md:pb-8"
     >
       {/* ============================================ */}
       {/* Confetti Effect */}

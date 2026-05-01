@@ -110,7 +110,7 @@ function CookProfile() {
 
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24">
         <div className="h-80 animate-shimmer" />
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-3">
           <div className="h-8 w-2/3 animate-shimmer rounded-lg" />
@@ -133,7 +133,7 @@ function CookProfile() {
 
   if (!cook) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-[#FFF8F0] px-4">
+      <div dir="rtl" className="min-h-screen flex items-center justify-center bg-[#FFF5E6] px-4">
         <div className="text-center">
           <div className="text-6xl mb-4">🔍</div>
           <h2 className="text-xl font-extrabold text-stone-800 mb-2">الطباخة غير موجودة</h2>
@@ -156,7 +156,7 @@ function CookProfile() {
   const isCookClosed = cook.isAcceptingOrders === false || scheduleStatus === false;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0]" style={{ paddingBottom: cookCartItems.length > 0 ? '160px' : '96px' }}>
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6]" style={{ paddingBottom: cookCartItems.length > 0 ? '160px' : '96px' }}>
       {/* ============================================ */}
       {/* Hero Header - صورة كبيرة مع معلومات */}
       {/* ============================================ */}

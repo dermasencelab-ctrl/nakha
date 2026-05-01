@@ -207,7 +207,7 @@ const CookDashboard = () => {
   // ============================================
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
         <div className="max-w-5xl mx-auto px-4 pt-4 space-y-4">
           <div className="h-24 animate-shimmer rounded-3xl" />
           <div className="h-32 animate-shimmer rounded-3xl" />
@@ -225,7 +225,7 @@ const CookDashboard = () => {
   const lowBalance = balance < 100 && !cookData?.isFoundingMember;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-28 md:pb-8">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-28 md:pb-8">
       {/* ============================================ */}
       {/* Header: ترحيب + حالة التوفر */}
       {/* ============================================ */}

@@ -200,8 +200,8 @@ function MyOrders() {
   // ============================================
   if (!isLoggedInCustomer) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
-        <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
+        <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md">
           <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
             <Link to="/" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition">
               <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
@@ -250,11 +250,11 @@ function MyOrders() {
   // النتائج
   // ============================================
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
       {/* ============================================ */}
       {/* Sticky Header */}
       {/* ============================================ */}
-      <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md">
+      <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <Link

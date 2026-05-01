@@ -231,7 +231,7 @@ const CookSignup = () => {
   return (
     <div
       dir="rtl"
-      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100"
+      className="min-h-screen relative overflow-hidden bg-[#FFF5E6]"
       style={{ paddingBottom: '130px' }}
     >
       {/* زخارف خلفية */}

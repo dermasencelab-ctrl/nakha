@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { PAYMENT_INFO, QUICK_AMOUNTS, MIN_TOPUP_AMOUNT } from '../config/settings';
 import ImageUploader from '../components/ImageUploader';
+import { ArrowRight } from 'lucide-react';
 
 const CookTopup = () => {
   const { userProfile } = useAuth();
@@ -18,26 +19,22 @@ const CookTopup = () => {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // نسخ RIP
   const copyRip = () => {
     navigator.clipboard.writeText(PAYMENT_INFO.rip);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // اختيار مبلغ سريع
   const handleQuickAmount = (value) => {
     setAmount(value.toString());
   };
 
-  // إرسال طلب الشحن
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     const amountNum = parseInt(amount);
 
-    // Validation
     if (!amountNum || amountNum < MIN_TOPUP_AMOUNT) {
       setError(`الحد الأدنى للشحن هو ${MIN_TOPUP_AMOUNT} دج`);
       return;
@@ -55,7 +52,6 @@ const CookTopup = () => {
 
     setSubmitting(true);
     try {
-      // جلب اسم الطباخة من بياناتها
       const cookName = userProfile?.email?.split('@')[0] || 'طباخة';
 
       await addDoc(collection(db, 'topup_requests'), {
@@ -80,23 +76,29 @@ const CookTopup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 py-8 px-4" dir="rtl">
-      <div className="max-w-2xl mx-auto">
-        {/* العنوان */}
-        <div className="mb-6">
+    <div className="min-h-screen bg-[#FFF5E6] pb-28" dir="rtl">
+      {/* رأس الصفحة */}
+      <header className="sticky top-0 z-30 bg-[#FFF5E6]/95 backdrop-blur-md border-b border-stone-100">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link
             to="/cook/wallet"
-            className="text-orange-600 text-sm hover:underline mb-2 inline-block"
+            className="flex items-center gap-1.5 text-stone-500 hover:text-orange-600 transition text-sm font-bold"
           >
-            ← العودة للمحفظة
+            <ArrowRight className="w-4 h-4" />
+            المحفظة
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800">شحن الرصيد 💵</h1>
+          <div className="flex items-center gap-2 mr-auto">
+            <div className="w-1 h-5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full" />
+            <h1 className="font-black text-stone-800 text-base">شحن الرصيد</h1>
+          </div>
         </div>
+      </header>
 
+      <div className="max-w-2xl mx-auto px-4 pt-4 space-y-4">
         {/* تعليمات */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-          <h3 className="font-bold text-blue-900 mb-2">📌 خطوات الشحن:</h3>
-          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+        <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5">
+          <h3 className="font-black text-blue-900 mb-3 text-sm">📌 خطوات الشحن:</h3>
+          <ol className="text-xs text-blue-800 space-y-1.5 list-decimal list-inside leading-relaxed">
             <li>افتحي تطبيق <strong>BaridiMob</strong> في جوالك</li>
             <li>حوّلي المبلغ المطلوب إلى الـ RIP أدناه</li>
             <li>اكتبي رقم التحويل الذي يصلك</li>
@@ -106,33 +108,33 @@ const CookTopup = () => {
         </div>
 
         {/* بطاقة معلومات الدفع */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6 border-2 border-orange-200">
+        <div className="bg-white rounded-3xl shadow-sm p-5 border border-orange-100">
           <div className="flex items-center gap-3 mb-4">
-            <div className="text-3xl">🏦</div>
+            <div className="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center text-xl">🏦</div>
             <div>
-              <h3 className="font-bold text-gray-800">معلومات الدفع</h3>
-              <p className="text-sm text-gray-500">{PAYMENT_INFO.bankName}</p>
+              <h3 className="font-black text-stone-800 text-sm">معلومات الدفع</h3>
+              <p className="text-xs text-stone-400">{PAYMENT_INFO.bankName}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-gray-500 mb-1">اسم الحساب</p>
-              <p className="font-bold text-gray-800">{PAYMENT_INFO.accountName}</p>
+              <p className="text-xs text-stone-400 mb-1 font-semibold">اسم الحساب</p>
+              <p className="font-black text-stone-800 text-sm">{PAYMENT_INFO.accountName}</p>
             </div>
 
             <div>
-              <p className="text-xs text-gray-500 mb-1">رقم الحساب (RIP)</p>
-              <div className="flex items-center gap-2 bg-orange-50 p-3 rounded-lg">
-                <p className="font-mono font-bold text-lg text-gray-800 flex-1" dir="ltr">
+              <p className="text-xs text-stone-400 mb-1 font-semibold">رقم الحساب (RIP)</p>
+              <div className="flex items-center gap-2 bg-orange-50 p-3 rounded-2xl border border-orange-100">
+                <p className="font-mono font-bold text-base text-stone-800 flex-1" dir="ltr">
                   {PAYMENT_INFO.rip}
                 </p>
                 <button
                   onClick={copyRip}
-                  className={`px-4 py-2 rounded-lg font-bold text-sm transition ${
+                  className={`px-4 py-2 rounded-xl font-black text-xs transition ${
                     copied
                       ? 'bg-green-600 text-white'
-                      : 'bg-orange-600 text-white hover:bg-orange-700'
+                      : 'bg-gradient-to-l from-orange-500 to-orange-600 text-white hover:opacity-90'
                   }`}
                 >
                   {copied ? '✓ تم النسخ' : '📋 نسخ'}
@@ -143,16 +145,16 @@ const CookTopup = () => {
         </div>
 
         {/* النموذج */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-sm p-5 border border-stone-100 space-y-5">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-xs font-semibold">
               ❌ {error}
             </div>
           )}
 
           {/* المبلغ */}
-          <div className="mb-5">
-            <label className="block text-gray-700 mb-3 font-bold">
+          <div>
+            <label className="block text-stone-700 mb-3 font-black text-sm">
               المبلغ المراد شحنه *
             </label>
 
@@ -163,10 +165,10 @@ const CookTopup = () => {
                   key={value}
                   type="button"
                   onClick={() => handleQuickAmount(value)}
-                  className={`py-3 px-2 rounded-lg font-bold text-sm transition ${
+                  className={`py-3 px-2 rounded-2xl font-black text-xs transition ${
                     parseInt(amount) === value
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-orange-100'
+                      ? 'bg-gradient-to-l from-orange-500 to-orange-600 text-white shadow-sm shadow-orange-500/20'
+                      : 'bg-stone-100 text-stone-700 hover:bg-orange-50 hover:text-orange-700'
                   }`}
                 >
                   {value} دج
@@ -174,7 +176,6 @@ const CookTopup = () => {
               ))}
             </div>
 
-            {/* حقل مبلغ مخصص */}
             <input
               type="number"
               value={amount}
@@ -182,17 +183,17 @@ const CookTopup = () => {
               required
               min={MIN_TOPUP_AMOUNT}
               step="100"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 text-lg font-bold text-center"
+              className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 outline-none transition text-base font-bold text-center"
               placeholder={`أو اكتب مبلغ مخصص (الحد الأدنى ${MIN_TOPUP_AMOUNT} دج)`}
             />
-            <p className="text-xs text-gray-500 mt-1 text-center">
+            <p className="text-xs text-stone-400 mt-1.5 text-center font-semibold">
               الحد الأدنى: {MIN_TOPUP_AMOUNT} دج
             </p>
           </div>
 
           {/* رقم التحويل */}
-          <div className="mb-5">
-            <label className="block text-gray-700 mb-2 font-bold">
+          <div>
+            <label className="block text-stone-700 mb-2 font-black text-sm">
               رقم التحويل (Transaction Number) *
             </label>
             <input
@@ -200,38 +201,38 @@ const CookTopup = () => {
               value={transactionNumber}
               onChange={(e) => setTransactionNumber(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 outline-none transition text-sm"
               placeholder="مثلاً: 123456789"
               dir="ltr"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-stone-400 mt-1.5 font-semibold">
               💡 ستجدين رقم التحويل في رسالة التأكيد من BaridiMob
             </p>
           </div>
 
           {/* صورة الإيصال */}
-          <div className="mb-5">
+          <div>
             <ImageUploader
               value={receiptImage}
               onChange={setReceiptImage}
               folder="receipts"
               label="صورة إيصال التحويل *"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-stone-400 mt-1.5 font-semibold">
               💡 ارفعي صورة واضحة للإيصال تظهر فيها معلومات التحويل
             </p>
           </div>
 
           {/* ملاحظات */}
-          <div className="mb-6">
-            <label className="block text-gray-700 mb-2 font-bold">
+          <div>
+            <label className="block text-stone-700 mb-2 font-black text-sm">
               ملاحظات (اختياري)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 resize-none"
+              className="w-full px-4 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 outline-none transition resize-none text-sm"
               placeholder="أي معلومات إضافية تريدين إخبار الأدمن بها..."
             />
           </div>
@@ -241,13 +242,13 @@ const CookTopup = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition disabled:opacity-50"
+              className="flex-1 bg-gradient-to-l from-orange-500 to-orange-600 text-white py-3 rounded-2xl font-black text-sm hover:opacity-90 transition disabled:opacity-50 shadow-sm shadow-orange-500/20"
             >
               {submitting ? 'جاري الإرسال...' : '📤 إرسال طلب الشحن'}
             </button>
             <Link
               to="/cook/wallet"
-              className="px-6 bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition"
+              className="px-6 bg-stone-100 text-stone-700 py-3 rounded-2xl font-black text-sm hover:bg-stone-200 transition"
             >
               إلغاء
             </Link>

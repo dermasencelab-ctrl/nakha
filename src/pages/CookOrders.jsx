@@ -173,33 +173,31 @@ const CookOrders = () => {
   }, {});
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 py-8 px-4" dir="rtl">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <Link to="/cook/dashboard" className="text-orange-600 text-sm hover:underline">
-              ← العودة إلى لوحة التحكم
-            </Link>
-            {/* زر تفعيل/تعطيل الصوت */}
-            <button
-              onClick={toggleSound}
-              title={soundEnabled ? 'إيقاف إشعارات الصوت' : 'تفعيل إشعارات الصوت'}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                soundEnabled
-                  ? 'bg-orange-100 text-orange-700 border border-orange-200'
-                  : 'bg-gray-100 text-gray-500 border border-gray-200'
-              }`}
-            >
-              {soundEnabled ? (
-                <Bell className="w-3.5 h-3.5" strokeWidth={2.4} />
-              ) : (
-                <BellOff className="w-3.5 h-3.5" strokeWidth={2.4} />
-              )}
-              {soundEnabled ? 'الصوت مفعّل' : 'الصوت معطّل'}
-            </button>
+    <div className="min-h-screen bg-[#FFF5E6] pb-28" dir="rtl">
+      {/* Header */}
+      <header className="sticky top-16 z-20 bg-[#FFF5E6]/95 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link to="/cook/dashboard" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition">
+            <Bell className="w-4 h-4 text-stone-700" strokeWidth={2.4} style={{ display: 'none' }} />
+            <span className="text-stone-700 font-bold text-lg leading-none">←</span>
+          </Link>
+          <div className="flex-1">
+            <h1 className="text-lg font-extrabold text-stone-800 leading-none">الطلبات الواردة</h1>
+            <p className="text-xs text-stone-500 mt-0.5">إدارة طلبات زبائنكِ</p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">الطلبات الواردة 📋</h1>
+          <button
+            onClick={toggleSound}
+            title={soundEnabled ? 'إيقاف إشعارات الصوت' : 'تفعيل إشعارات الصوت'}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
+              soundEnabled ? 'bg-orange-100 text-orange-600' : 'bg-white text-stone-400 shadow-sm'
+            }`}
+          >
+            {soundEnabled ? <Bell className="w-4 h-4" strokeWidth={2.4} /> : <BellOff className="w-4 h-4" strokeWidth={2.4} />}
+          </button>
         </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-4 pt-2">
 
         {/* بانر طلب جديد */}
         {newCount > 0 && (
@@ -220,42 +218,47 @@ const CookOrders = () => {
           </button>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm mb-6 p-2 flex gap-2 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button key={tab.value} onClick={() => {
-              setActiveTab(tab.value);
-              if (tab.value === 'pending') clearNewCount();
-            }}
-              className={`flex-shrink-0 py-3 px-4 rounded-lg font-bold transition whitespace-nowrap ${
-                activeTab === tab.value ? 'text-white' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              style={activeTab === tab.value ? {
-                backgroundColor: tab.color === 'orange' ? '#ea580c' : tab.color === 'blue' ? '#2563eb' :
-                  tab.color === 'green' ? '#16a34a' : tab.color === 'gray' ? '#4b5563' : '#dc2626',
-              } : {}}>
-              <span className="relative">
-                {tab.label}
-                {tab.value === 'pending' && newCount > 0 && (
-                  <span className="absolute -top-2 -left-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
-                    {newCount}
+        <div className="overflow-x-auto no-scrollbar mb-4">
+          <div className="flex gap-2">
+            {tabs.map((tab) => (
+              <button key={tab.value} onClick={() => {
+                setActiveTab(tab.value);
+                if (tab.value === 'pending') clearNewCount();
+              }}
+                className={`flex-shrink-0 flex items-center gap-1.5 py-2 px-3.5 rounded-full font-bold text-xs transition whitespace-nowrap active:scale-95 ${
+                  activeTab === tab.value
+                    ? tab.color === 'orange' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                    : tab.color === 'blue' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : tab.color === 'green' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+                    : tab.color === 'red' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-stone-600 text-white shadow-lg shadow-stone-500/30'
+                    : 'bg-white text-stone-700 shadow-sm hover:bg-orange-50'
+                }`}
+              >
+                <span className="relative">
+                  {tab.label}
+                  {tab.value === 'pending' && newCount > 0 && (
+                    <span className="absolute -top-2 -left-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                      {newCount}
+                    </span>
+                  )}
+                </span>
+                {counts[tab.value] > 0 && (
+                  <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black flex items-center justify-center ${activeTab === tab.value ? 'bg-white/25' : 'bg-orange-100 text-orange-700'}`}>
+                    {counts[tab.value]}
                   </span>
                 )}
-              </span>
-              {counts[tab.value] > 0 && (
-                <span className={`mr-2 px-2 py-0.5 rounded-full text-sm ${activeTab === tab.value ? 'bg-white text-gray-800' : 'bg-gray-200'}`}>
-                  {counts[tab.value]}
-                </span>
-              )}
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">جارٍ التحميل...</div>
+          <div className="text-center py-12 text-stone-500 font-bold">جارٍ التحميل...</div>
         ) : filteredOrders.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
+          <div className="bg-white rounded-3xl shadow-sm p-12 text-center">
             <div className="text-6xl mb-4">📭</div>
-            <p className="text-gray-500">
+            <p className="text-stone-500 font-semibold text-sm">
               {activeTab === 'pending' && 'لا توجد طلبات جديدة حالياً'}
               {activeTab === 'preparing' && 'لا توجد طلبات قيد التحضير'}
               {activeTab === 'ready' && 'لا توجد طلبات جاهزة'}
@@ -264,165 +267,157 @@ const CookOrders = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredOrders.map((order) => (
-              <div key={order.id} className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 pb-4 border-b border-gray-100">
-                  <div>
-                    <p className="text-xs text-gray-500">رقم الطلب</p>
-                    <p className="font-bold text-gray-800" dir="ltr">#{order.id.slice(0, 8).toUpperCase()}</p>
+              <div key={order.id} className="bg-white rounded-3xl shadow-sm overflow-hidden">
+                {/* رأس البطاقة */}
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-l from-stone-50 to-white border-b border-stone-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-stone-500">#{order.id.slice(0, 8).toUpperCase()}</span>
+                    <span className="text-stone-300">•</span>
+                    <span className="text-[11px] text-stone-500">{formatDate(order.createdAt)}</span>
                   </div>
-                  <div className="text-sm text-gray-600">📅 {formatDate(order.createdAt)}</div>
+                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
+                    order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    order.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                    order.status === 'ready' ? 'bg-green-100 text-green-700' :
+                    order.status === 'completed' ? 'bg-stone-100 text-stone-600' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {order.status === 'pending' ? '🔔 جديد' : order.status === 'preparing' ? '👩‍🍳 تحضير' :
+                     order.status === 'ready' ? '✅ جاهز' : order.status === 'completed' ? '📦 مكتمل' : '❌ ملغي'}
+                  </span>
                 </div>
 
-                <div className="bg-orange-50 rounded-lg p-4 mb-4">
-                  <h4 className="font-bold text-gray-700 mb-2">👤 معلومات الزبون</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-500">الاسم:</span>{' '}
-                      <span className="font-medium">{order.customerName || '-'}</span>
+                <div className="p-4 space-y-3">
+                  {/* معلومات الزبون */}
+                  <div className="bg-orange-50 rounded-2xl p-3 space-y-1.5">
+                    <p className="text-[11px] font-bold text-stone-500 mb-2">👤 معلومات الزبون</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-stone-500">الاسم:</span>
+                      <span className="font-extrabold text-stone-800">{order.customerName || '-'}</span>
                     </div>
-                    <div>
-                      <span className="text-gray-500">الهاتف:</span>{' '}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-stone-500">الهاتف:</span>
                       {shouldShowPhone(order.status) ? (
-                        <a href={`tel:${order.customerPhone}`}
-                          className="font-medium text-green-600 hover:underline inline-flex items-center gap-1" dir="ltr">
-                          <Phone className="w-4 h-4" />
+                        <a href={`tel:${order.customerPhone}`} className="font-extrabold text-green-600 flex items-center gap-1" dir="ltr">
+                          <Phone className="w-3.5 h-3.5" strokeWidth={2.4} />
                           {order.customerPhone || '-'}
                         </a>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-gray-400 font-medium" dir="ltr">
-                          <Lock className="w-4 h-4" />
+                        <span className="flex items-center gap-1 text-stone-400 font-bold" dir="ltr">
+                          <Lock className="w-3.5 h-3.5" strokeWidth={2.4} />
                           {maskPhone(order.customerPhone)}
                         </span>
                       )}
                     </div>
                     {order.orderType && (
-                      <div>
-                        <span className="text-gray-500">نوع الطلب:</span>{' '}
-                        <span className="font-medium">
-                          {order.orderType === 'instant' ? '⚡ فوري' : '📅 مسبق'}
-                        </span>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-stone-500">نوع الطلب:</span>
+                        <span className="font-bold text-stone-700">{order.orderType === 'instant' ? '⚡ فوري' : '📅 مسبق'}</span>
                       </div>
                     )}
                     {order.orderType === 'scheduled' && order.scheduledDate && (
-                      <div>
-                        <span className="text-gray-500">الموعد:</span>{' '}
-                        <span className="font-medium">{order.scheduledDate} {order.scheduledTime}</span>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-stone-500">الموعد:</span>
+                        <span className="font-bold text-stone-700">{order.scheduledDate} {order.scheduledTime}</span>
                       </div>
                     )}
                     {order.notes && (
-                      <div className="md:col-span-2">
-                        <span className="text-gray-500">ملاحظات:</span>{' '}
-                        <span className="font-medium">{order.notes}</span>
+                      <div className="pt-1 border-t border-orange-100">
+                        <p className="text-[11px] text-stone-500 mb-0.5">ملاحظات:</p>
+                        <p className="text-xs text-stone-700 font-semibold">{order.notes}</p>
+                      </div>
+                    )}
+                    {!shouldShowPhone(order.status) && order.status !== 'cancelled' && (
+                      <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 flex items-center gap-2">
+                        <PhoneOff className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" strokeWidth={2.4} />
+                        <p className="text-[11px] text-amber-700">
+                          {order.status === 'pending' ? 'رقم الهاتف يظهر عند جاهزية الطلب' : 'رقم الهاتف يظهر عند تأكيد الجاهزية'}
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {!shouldShowPhone(order.status) && order.status !== 'cancelled' && (
-                    <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-2 flex items-center gap-2">
-                      <PhoneOff className="w-4 h-4 text-yellow-600 flex-shrink-0" />
-                      <p className="text-xs text-yellow-700">
-                        {order.status === 'pending'
-                          ? 'سيتم عرض رقم هاتف الزبون بعد الانتهاء من تحضير الطلب'
-                          : 'سيتم عرض رقم هاتف الزبون عند تأكيد جاهزية الطلب'
-                        }
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="font-bold text-gray-700 mb-2">🍽️ الأطباق المطلوبة</h4>
-                  <div className="space-y-2">
-                    {order.items && order.items.length > 0 ? (
-                      order.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2">
-                          <div>
-                            <span className="font-medium">{item.name}</span>
-                            <span className="text-gray-500 text-sm mr-2">
-                              × {item.quantity}
-                              {item.unit && (
-                                <span className="text-gray-400 mr-1">({unitLabels[item.unit] || item.unit})</span>
-                              )}
-                            </span>
+                  {/* الأطباق */}
+                  <div>
+                    <p className="text-[11px] font-bold text-stone-500 mb-2">🍽️ الأطباق المطلوبة</p>
+                    <div className="space-y-1.5">
+                      {order.items && order.items.length > 0 ? (
+                        order.items.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center bg-stone-50 rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-stone-800 text-sm">{item.name}</span>
+                              <span className="text-stone-500 text-xs">× {item.quantity}</span>
+                              {item.unit && <span className="text-stone-400 text-xs">({unitLabels[item.unit] || item.unit})</span>}
+                            </div>
+                            <span className="font-extrabold text-orange-600 text-sm">{item.price * item.quantity} دج</span>
                           </div>
-                          <span className="font-bold text-orange-600">{item.price * item.quantity} دج</span>
+                        ))
+                      ) : (
+                        <div className="flex justify-between items-center bg-stone-50 rounded-xl px-3 py-2">
+                          <span className="font-bold text-stone-800 text-sm">{order.dishName || 'طبق'} × {order.quantity || 1}</span>
+                          <span className="font-extrabold text-orange-600 text-sm">{order.totalPrice || 0} دج</span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-2">
-                        <div>
-                          <span className="font-medium">{order.dishName || 'طبق'}</span>
-                          <span className="text-gray-500 text-sm mr-2">× {order.quantity || 1}</span>
-                        </div>
-                        <span className="font-bold text-orange-600">{order.totalPrice || 0} دج</span>
-                      </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center mt-2.5 pt-2.5 border-t border-stone-100">
+                      <span className="text-xs font-bold text-stone-600">المجموع:</span>
+                      <span className="text-lg font-black text-orange-600">{calculateTotal(order)} دج</span>
+                    </div>
+                  </div>
+
+                  {/* أزرار الإجراءات */}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-100">
+                    {order.status === 'pending' && (
+                      <>
+                        <button onClick={() => updateOrderStatus(order.id, 'preparing')}
+                          disabled={actionLoading === order.id}
+                          className="flex-1 bg-gradient-to-l from-blue-500 to-blue-600 text-white py-3 px-4 rounded-2xl font-extrabold text-sm hover:from-blue-600 hover:to-blue-700 transition-all active:scale-[0.98] shadow-lg shadow-blue-500/30 disabled:opacity-50">
+                          {actionLoading === order.id ? 'جارٍ التحديث...' : '👩‍🍳 قبول وبدء التحضير'}
+                        </button>
+                        <button onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                          disabled={actionLoading === order.id}
+                          className="bg-red-50 text-red-700 py-3 px-4 rounded-2xl font-bold text-sm hover:bg-red-100 transition-all active:scale-[0.98] border border-red-200 disabled:opacity-50">
+                          ❌ رفض
+                        </button>
+                      </>
                     )}
-                  </div>
-                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                    <span className="font-bold text-gray-700">المجموع:</span>
-                    <span className="text-xl font-bold text-orange-600">{calculateTotal(order)} دج</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
-                  {order.status === 'pending' && (
-                    <>
-                      <button onClick={() => updateOrderStatus(order.id, 'preparing')}
+                    {order.status === 'preparing' && (
+                      <button onClick={() => { if (confirm('هل تم الانتهاء من تحضير الطلب؟')) updateOrderStatus(order.id, 'ready'); }}
                         disabled={actionLoading === order.id}
-                        className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50">
-                        {actionLoading === order.id ? 'جارٍ التحديث...' : '👩‍🍳 قبول الطلب وبدء التحضير'}
+                        className="flex-1 bg-gradient-to-l from-green-500 to-green-600 text-white py-3 px-4 rounded-2xl font-extrabold text-sm hover:from-green-600 hover:to-green-700 transition-all active:scale-[0.98] shadow-lg shadow-green-500/30 disabled:opacity-50">
+                        {actionLoading === order.id ? 'جارٍ التحديث...' : '✅ الطلب جاهز للتسليم'}
                       </button>
-                      <button onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                        disabled={actionLoading === order.id}
-                        className="bg-red-100 text-red-700 py-3 px-4 rounded-lg font-bold hover:bg-red-200 transition disabled:opacity-50">
-                        ❌ رفض الطلب
-                      </button>
-                    </>
-                  )}
-
-                  {order.status === 'preparing' && (
-                    <button onClick={() => {
-                      if (confirm('هل تم الانتهاء من تحضير الطلب؟')) {
-                        updateOrderStatus(order.id, 'ready');
-                      }
-                    }}
-                      disabled={actionLoading === order.id}
-                      className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-bold hover:bg-green-700 transition disabled:opacity-50">
-                      {actionLoading === order.id ? 'جارٍ التحديث...' : '✅ الطلب جاهز للتسليم'}
-                    </button>
-                  )}
-
-                  {order.status === 'ready' && (
-                    <div className="w-full space-y-3">
-                      <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-green-700 font-medium">📱 رقم هاتف الزبون:</p>
+                    )}
+                    {order.status === 'ready' && (
+                      <div className="w-full space-y-2">
+                        <div className="bg-green-50 border border-green-200 rounded-2xl p-3.5 flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-green-700 font-bold">📱 رقم هاتف الزبون:</p>
+                            <a href={`tel:${order.customerPhone}`} className="text-xl font-black text-green-700 hover:underline" dir="ltr">
+                              {order.customerPhone}
+                            </a>
+                          </div>
                           <a href={`tel:${order.customerPhone}`}
-                            className="text-2xl font-bold text-green-700 hover:underline" dir="ltr">
-                            {order.customerPhone}
+                            className="bg-gradient-to-l from-green-500 to-green-600 text-white px-4 py-2.5 rounded-xl font-extrabold text-sm hover:from-green-600 hover:to-green-700 transition-all shadow-lg shadow-green-500/30 flex items-center gap-2">
+                            <Phone className="w-4 h-4" strokeWidth={2.4} />
+                            اتصال
                           </a>
                         </div>
-                        <a href={`tel:${order.customerPhone}`}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition flex items-center gap-2">
-                          <Phone className="w-5 h-5" />
-                          اتصال
-                        </a>
+                        <button onClick={() => updateOrderStatus(order.id, 'completed')}
+                          disabled={actionLoading === order.id}
+                          className="w-full bg-stone-800 hover:bg-stone-900 text-white py-3 px-4 rounded-2xl font-extrabold text-sm transition-all active:scale-[0.98] disabled:opacity-50">
+                          {actionLoading === order.id ? 'جارٍ التحديث...' : '📦 تأكيد التسليم'}
+                        </button>
                       </div>
-                      <button onClick={() => updateOrderStatus(order.id, 'completed')}
-                        disabled={actionLoading === order.id}
-                        className="w-full bg-gray-700 text-white py-3 px-4 rounded-lg font-bold hover:bg-gray-800 transition disabled:opacity-50">
-                        {actionLoading === order.id ? 'جارٍ التحديث...' : '📦 تأكيد التسليم'}
-                      </button>
-                    </div>
-                  )}
-
-                  {(order.status === 'completed' || order.status === 'cancelled') && (
-                    <p className="text-gray-500 text-sm w-full text-center py-2">
-                      {order.status === 'completed' ? '✅ تم تسليم الطلب بنجاح' : '❌ تم إلغاء الطلب'}
-                    </p>
-                  )}
+                    )}
+                    {(order.status === 'completed' || order.status === 'cancelled') && (
+                      <p className="text-stone-500 text-xs font-semibold w-full text-center py-2">
+                        {order.status === 'completed' ? '✅ تم تسليم الطلب بنجاح' : '❌ تم إلغاء الطلب'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

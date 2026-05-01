@@ -79,7 +79,7 @@ const Cart = () => {
   // ============================================
   if (cart.length === 0) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] px-4 pb-24 md:pb-8">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] px-4 pb-24 md:pb-8">
         {/* Header */}
         <header className="pt-4 pb-6 flex items-center gap-3">
           <Link
@@ -128,11 +128,11 @@ const Cart = () => {
   // السلة فيها عناصر
   // ============================================
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0]" style={{ paddingBottom: '200px' }}>
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6]" style={{ paddingBottom: '200px' }}>
       {/* ============================================ */}
       {/* Sticky Header */}
       {/* ============================================ */}
-      <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md">
+      <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link
             to="/cooks"

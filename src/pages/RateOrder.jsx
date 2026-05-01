@@ -145,7 +145,7 @@ const RateOrder = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-[#FFF5E6] flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full">
         <div className="text-center mb-6">
           <div className="text-5xl mb-3">🌟</div>

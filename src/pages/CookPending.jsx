@@ -28,7 +28,7 @@ const CookPending = () => {
   return (
     <div
       dir="rtl"
-      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100"
+      className="min-h-screen relative overflow-hidden bg-[#FFF5E6]"
     >
       {/* زخارف خلفية */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-orange-300/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />

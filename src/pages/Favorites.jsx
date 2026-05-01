@@ -60,7 +60,7 @@ export default function Favorites() {
   }, [favorites]);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-28">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-28">
       {/* Header */}
       <div className="max-w-5xl mx-auto px-4 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-1">

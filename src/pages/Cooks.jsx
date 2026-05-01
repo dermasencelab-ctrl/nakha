@@ -169,7 +169,7 @@ function Cooks() {
     sortOptions.find((s) => s.value === sortBy)?.label || 'الترتيب';
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
       {/* ============================================ */}
       {/* Sticky Header - شريط بحث ثابت */}
       {/* ============================================ */}
@@ -177,7 +177,7 @@ function Cooks() {
         className={`sticky top-16 md:top-16 z-30 transition-all duration-300 ${
           headerScrolled
             ? 'bg-white/95 backdrop-blur-xl shadow-sm'
-            : 'bg-[#FFF8F0]'
+            : 'bg-[#FFF5E6]'
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 py-3">

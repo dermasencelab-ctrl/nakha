@@ -34,7 +34,7 @@ const Checkout = () => {
 
   if (cart.length === 0) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] flex items-center justify-center px-4 pb-24 md:pb-8">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] flex items-center justify-center px-4 pb-24 md:pb-8">
         <div className="bg-white rounded-3xl shadow-lg p-8 text-center max-w-sm w-full">
           <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingBag className="w-10 h-10 text-orange-500" strokeWidth={1.8} />
@@ -122,8 +122,8 @@ const Checkout = () => {
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0]" style={{ paddingBottom: '180px' }}>
-      <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md border-b border-orange-100/50">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6]" style={{ paddingBottom: '180px' }}>
+      <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md border-b border-orange-100/50">
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3 mb-4">
             <Link to="/cart" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition" aria-label="رجوع">

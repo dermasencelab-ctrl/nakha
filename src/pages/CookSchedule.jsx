@@ -53,14 +53,14 @@ export default function CookSchedule() {
 
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] flex items-center justify-center">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] flex items-center justify-center">
         <div className="text-orange-500 font-bold">جارٍ التحميل...</div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-28">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-28">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">

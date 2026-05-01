@@ -127,7 +127,7 @@ function CookRevenue() {
 
   if (loading) {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24">
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24">
         <div className="max-w-3xl mx-auto px-4 pt-8 space-y-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 bg-white rounded-3xl animate-pulse shadow-sm" />
@@ -138,9 +138,9 @@ function CookRevenue() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24">
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24">
       {/* Header */}
-      <header className="sticky top-16 z-20 bg-[#FFF8F0]/95 backdrop-blur-md">
+      <header className="sticky top-16 z-20 bg-[#FFF5E6]/95 backdrop-blur-md">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link to="/cook/dashboard" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition">
             <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
