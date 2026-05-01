@@ -176,7 +176,7 @@ function Cooks() {
       <header
         className={`sticky top-16 md:top-16 z-30 transition-all duration-300 ${
           headerScrolled
-            ? 'bg-white/95 backdrop-blur-xl shadow-sm'
+            ? 'bg-[#FFF5E6]/95 backdrop-blur-xl shadow-sm border-b border-orange-100/60'
             : 'bg-[#FFF5E6]'
         }`}
       >
@@ -194,9 +194,17 @@ function Cooks() {
               <h1 className="text-xl font-extrabold text-stone-800 leading-none">
                 الطباخات
               </h1>
-              <p className="text-xs text-stone-500 mt-0.5">
-                {!loading && `${filteredCooks.length} طباخة في بشار`}
-              </p>
+              {!loading && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inset-0 rounded-full bg-green-400 opacity-70" />
+                    <span className="relative rounded-full h-1.5 w-1.5 bg-green-500 inline-flex" />
+                  </span>
+                  <p className="text-xs text-stone-500 font-semibold">
+                    {filteredCooks.length} طباخة في بشار
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* زر الترتيب */}
@@ -243,9 +251,9 @@ function Cooks() {
               const Icon = filter.icon;
               const isActive = statusFilter === filter.value;
               const activeColors = {
-                orange: 'bg-orange-500 text-white shadow-lg shadow-orange-500/30',
-                green: 'bg-green-500 text-white shadow-lg shadow-green-500/30',
-                amber: 'bg-amber-500 text-white shadow-lg shadow-amber-500/30',
+                orange: 'bg-gradient-to-l from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30',
+                green: 'bg-gradient-to-l from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30',
+                amber: 'bg-gradient-to-l from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30',
               };
               return (
                 <button
@@ -275,7 +283,7 @@ function Cooks() {
                   onClick={() => setTypeFilter(type.value)}
                   className={`flex-shrink-0 flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-bold transition-all active:scale-95 ${
                     isActive
-                      ? 'bg-stone-800 text-white shadow-lg'
+                      ? 'bg-gradient-to-l from-stone-800 to-stone-700 text-white shadow-lg shadow-stone-800/20'
                       : 'bg-white text-stone-700 hover:bg-stone-50 shadow-sm'
                   }`}
                 >
@@ -320,17 +328,32 @@ function Cooks() {
             onClear={clearAllFilters}
           />
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredCooks.map((cook, idx) => (
-              <div
-                key={cook.id}
-                style={{ animationDelay: `${Math.min(idx * 50, 400)}ms` }}
-                className="animate-slide-up"
-              >
-                <CookCard cook={cook} />
+          <>
+            {/* شريط عدد النتائج والترتيب الحالي */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full" />
+                <span className="text-xs font-black text-stone-700">
+                  {filteredCooks.length} نتيجة
+                </span>
               </div>
-            ))}
-          </div>
+              <span className="text-[11px] text-stone-400 font-semibold">
+                {currentSortLabel}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredCooks.map((cook, idx) => (
+                <div
+                  key={cook.id}
+                  style={{ animationDelay: `${Math.min(idx * 55, 440)}ms` }}
+                  className="animate-card-enter"
+                >
+                  <CookCard cook={cook} />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </main>
 
@@ -408,9 +431,9 @@ function Cooks() {
         <div className="px-4 pb-4">
           <button
             onClick={() => setSortSheetOpen(false)}
-            className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-3.5 rounded-2xl active:scale-[0.98] transition-all"
+            className="w-full bg-gradient-to-l from-orange-500 to-orange-600 hover:opacity-90 text-white font-extrabold py-3.5 rounded-2xl active:scale-[0.98] transition-all shadow-lg shadow-orange-500/30"
           >
-            تطبيق
+            تطبيق الترتيب
           </button>
         </div>
       </div>
@@ -448,7 +471,7 @@ function CooksGridSkeleton() {
 function EmptyState({ hasFilters, onClear }) {
   return (
     <div className="bg-white rounded-3xl p-8 text-center shadow-sm mt-4">
-      <div className="w-20 h-20 mx-auto bg-orange-50 rounded-full flex items-center justify-center mb-4">
+      <div className="w-20 h-20 mx-auto bg-orange-50 rounded-full flex items-center justify-center mb-4 animate-gentle-bounce">
         <span className="text-4xl">
           {hasFilters ? '🔍' : '👩‍🍳'}
         </span>

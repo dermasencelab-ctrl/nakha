@@ -199,72 +199,69 @@ export default function Navbar() {
       </header>
 
       {/* ============================================ */}
-      {/* Bottom Tab Bar - يظهر فقط على الجوال */}
+      {/* Bottom Tab Bar — floating pill, mobile only */}
       {/* ============================================ */}
       <nav
         dir="rtl"
         className="md:hidden fixed bottom-0 right-0 left-0 z-40 pb-safe"
       >
-        {/* تأثير blur في الخلفية */}
-        <div className="absolute inset-0 bg-[#FFF5E6]/92 backdrop-blur-xl border-t border-orange-100/60" />
-
-        <div className="relative max-w-6xl mx-auto px-2">
-          <div className="flex items-center justify-around h-16">
-            {bottomTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <NavLink
-                  key={tab.to}
-                  to={tab.to}
-                  end={tab.to === '/'}
-                  className={({ isActive }) =>
-                    `group relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-all active:scale-90 ${
-                      isActive ? 'text-orange-600' : 'text-stone-400'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      {/* المؤشر العلوي للتبويب النشط */}
-                      {isActive && (
-                        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-b-full" />
-                      )}
-
-                      {/* خلفية دائرية للتبويب النشط */}
+        {/* Floating pill container */}
+        <div className="mx-3 mb-2">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-stone-900/[0.13] border border-white/80 overflow-hidden">
+            <div className="flex items-center justify-around h-14 px-1">
+              {bottomTabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <NavLink
+                    key={tab.to}
+                    to={tab.to}
+                    end={tab.to === '/'}
+                    className="flex-1 flex items-center justify-center h-full"
+                  >
+                    {({ isActive }) => (
+                      /* حاوية التبويب — تأخذ خلفية برتقالية فاتحة عند التنشيط */
                       <div
-                        className={`relative flex items-center justify-center transition-all duration-300 ${
-                          isActive ? 'scale-110' : 'scale-100'
+                        className={`relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-300 active:scale-90 select-none ${
+                          isActive ? 'bg-orange-50' : 'bg-transparent'
                         }`}
+                        style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                       >
-                        {isActive && (
-                          <span className="absolute inset-0 bg-orange-100 rounded-full -m-2 animate-pulse-slow" />
-                        )}
-                        <Icon
-                          className="relative w-6 h-6"
-                          strokeWidth={isActive ? 2.5 : 2}
-                        />
-
-                        {/* شارة العدد */}
-                        {tab.badge > 0 && (
-                          <span className="absolute -top-1.5 -left-2 min-w-[18px] h-[18px] px-1 bg-gradient-to-br from-orange-500 to-orange-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-md">
-                            {tab.badge > 99 ? '99+' : tab.badge}
-                          </span>
-                        )}
+                        {/* أيقونة مع تأثير scale */}
+                        <div
+                          className={`relative transition-all duration-300 ${
+                            isActive ? 'scale-110' : 'scale-100'
+                          }`}
+                          style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                        >
+                          <Icon
+                            className={`w-5 h-5 transition-colors duration-200 ${
+                              isActive ? 'text-orange-600' : 'text-stone-400'
+                            }`}
+                            strokeWidth={isActive ? 2.5 : 2}
+                          />
+                          {/* شارة العدد */}
+                          {tab.badge > 0 && (
+                            <span className="absolute -top-1.5 -left-2 min-w-[16px] h-4 px-1 bg-gradient-to-br from-orange-500 to-orange-600 text-white text-[9px] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow">
+                              {tab.badge > 99 ? '99+' : tab.badge}
+                            </span>
+                          )}
+                        </div>
+                        {/* اسم التبويب */}
+                        <span
+                          className={`text-[10px] leading-none transition-all duration-200 ${
+                            isActive
+                              ? 'font-extrabold text-orange-600'
+                              : 'font-medium text-stone-400'
+                          }`}
+                        >
+                          {tab.label}
+                        </span>
                       </div>
-
-                      {/* اسم التبويب */}
-                      <span
-                        className={`text-[11px] transition-all ${
-                          isActive ? 'font-bold' : 'font-medium'
-                        }`}
-                      >
-                        {tab.label}
-                      </span>
-                    </>
-                  )}
-                </NavLink>
-              );
-            })}
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
           </div>
         </div>
       </nav>
