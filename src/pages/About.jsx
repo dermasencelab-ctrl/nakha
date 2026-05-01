@@ -9,42 +9,31 @@ import {
   MapPin,
   Mail,
   MessageCircle,
-  ArrowRight,
   ArrowLeft,
   Sparkles,
   Utensils,
   Shield,
   Users,
   Quote,
-  Phone,
 } from 'lucide-react';
 
 const About = () => {
-  const [stats, setStats] = useState({
-    cooks: 0,
-    dishes: 0,
-    orders: 0,
-  });
+  const [stats, setStats] = useState({ cooks: 0, dishes: 0, orders: 0 });
+  const [statsLoaded, setStatsLoaded] = useState(false);
 
-  // جلب أرقام حقيقية من قاعدة البيانات
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const cooksSnap = await getDocs(
-          query(collection(db, 'cooks'), where('status', '==', 'approved'))
-        );
-        const dishesSnap = await getDocs(collection(db, 'dishes'));
-        const ordersSnap = await getDocs(
-          query(collection(db, 'orders'), where('status', '==', 'completed'))
-        );
-
-        setStats({
-          cooks: cooksSnap.size,
-          dishes: dishesSnap.size,
-          orders: ordersSnap.size,
-        });
+        const [cooksSnap, dishesSnap, ordersSnap] = await Promise.all([
+          getDocs(query(collection(db, 'cooks'), where('status', '==', 'approved'))),
+          getDocs(collection(db, 'dishes')),
+          getDocs(query(collection(db, 'orders'), where('status', '==', 'completed'))),
+        ]);
+        setStats({ cooks: cooksSnap.size, dishes: dishesSnap.size, orders: ordersSnap.size });
       } catch (err) {
         console.error('Error loading stats:', err);
+      } finally {
+        setStatsLoaded(true);
       }
     };
     fetchStats();
@@ -54,196 +43,158 @@ const About = () => {
     'https://wa.me/213549741892?text=السلام عليكم، عندي استفسار عن نَكهة';
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
-      {/* ============================================ */}
-      {/* Header مع زر رجوع */}
-      {/* ============================================ */}
-      <header className="sticky top-16 z-20 bg-[#FFF8F0]/95 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link
-            to="/"
-            className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition"
-            aria-label="رجوع"
-          >
-            <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
-          </Link>
-          <h1 className="text-lg font-extrabold text-stone-800">عن نَكهة</h1>
-        </div>
-      </header>
+    <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
+      <style>{`
+        @keyframes heroFloat {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-12px) rotate(3deg); }
+        }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .anim-float { animation: heroFloat 6s ease-in-out infinite; }
+        .anim-fade-up { animation: fadeUp 0.7s ease both; }
+        .anim-fade-up-2 { animation: fadeUp 0.7s 0.15s ease both; }
+        .anim-fade-up-3 { animation: fadeUp 0.7s 0.3s ease both; }
+        .grain-overlay {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        }
+      `}</style>
 
-      {/* ============================================ */}
-      {/* Hero هادئ - ليس صاخب */}
-      {/* ============================================ */}
-      <section className="relative overflow-hidden pt-6 pb-8">
-        {/* زخارف ناعمة */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200/30 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-0 left-0 w-64 h-64 bg-amber-200/30 rounded-full blur-3xl pointer-events-none" />
+      {/* ═══════════════════════════════════════════ */}
+      {/* DARK HERO */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="relative bg-[#1C0A00] overflow-hidden pt-10 pb-20">
+        {/* grain */}
+        <div className="grain-overlay absolute inset-0 pointer-events-none" />
+        {/* warm glows */}
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none"
+             style={{ background: 'radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full pointer-events-none"
+             style={{ background: 'radial-gradient(circle, rgba(234,88,12,0.22) 0%, transparent 70%)' }} />
 
-        <div className="relative max-w-4xl mx-auto px-4 text-center">
-          {/* شعار */}
-          <div className="inline-block mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-orange-400/30 rounded-3xl blur-xl" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/40 mx-auto">
-                <ChefHat className="w-8 h-8 text-white" strokeWidth={2.3} />
-              </div>
-            </div>
+        <div className="relative max-w-4xl mx-auto px-5 text-center">
+          {/* floating icon */}
+          <div className="anim-float inline-flex items-center justify-center w-16 h-16 rounded-3xl mb-5 shadow-2xl shadow-orange-900/50"
+               style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)' }}>
+            <ChefHat className="w-8 h-8 text-white" strokeWidth={2.2} />
           </div>
 
-          <h2 className="text-3xl md:text-5xl font-black text-stone-800 mb-3 leading-tight">
+          <h1 className="anim-fade-up text-4xl md:text-6xl font-black text-white leading-tight mb-4">
             من الحي إلى{' '}
-            <span className="relative inline-block">
+            <span style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               مائدتك
-              <span className="absolute -bottom-1 right-0 w-full h-2 bg-amber-300/60 rounded-full -z-10" />
             </span>
-          </h2>
+          </h1>
 
-          <p className="text-sm md:text-base text-stone-600 leading-relaxed max-w-xl mx-auto">
+          <p className="anim-fade-up-2 text-stone-400 text-base leading-relaxed max-w-lg mx-auto mb-6">
             نَكهة منصة جزائرية تربط بين طباخات بشار الموهوبات والعائلات التي تبحث عن طعام بيتي أصيل
           </p>
 
-          {/* موقعنا */}
-          <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-orange-200 px-3 py-1.5 rounded-full text-xs font-extrabold text-orange-700 mt-4 shadow-sm">
-            <MapPin className="w-3 h-3" strokeWidth={2.5} />
+          <div className="anim-fade-up-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold text-amber-300 border border-amber-800/60"
+               style={{ background: 'rgba(251,191,36,0.08)' }}>
+            <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
             بشار، الجزائر 🇩🇿
           </div>
         </div>
+
+        {/* curved bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
+          <svg viewBox="0 0 1440 48" preserveAspectRatio="none" className="w-full h-12" fill="#FFF5E6">
+            <path d="M0,48 C360,0 1080,0 1440,48 L1440,48 L0,48 Z" />
+          </svg>
+        </div>
       </section>
 
-      {/* ============================================ */}
-      {/* الأرقام الحقيقية (من DB) */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4 mb-8">
-        <div className="bg-white rounded-3xl shadow-md shadow-orange-200/30 p-5">
-          <div className="grid grid-cols-3 gap-3">
-            <StatBox
-              icon={ChefHat}
-              value={stats.cooks}
-              label="طباخة"
-              suffix={stats.cooks !== 1 ? '+' : ''}
-              color="orange"
-            />
+      {/* ═══════════════════════════════════════════ */}
+      {/* STATS */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="max-w-4xl mx-auto px-4 -mt-2 mb-10">
+        <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-6">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <StatBox icon={ChefHat} value={stats.cooks} label="طباخة" color="orange" loaded={statsLoaded} />
             <div className="border-r border-l border-stone-100" />
-            <StatBox
-              icon={Utensils}
-              value={stats.dishes}
-              label="طبق"
-              suffix={stats.dishes !== 1 ? '+' : ''}
-              color="amber"
-            />
-            <div className="border-r border-stone-100" />
-            <StatBox
-              icon={Heart}
-              value={stats.orders}
-              label="طلب سعيد"
-              suffix={stats.orders !== 1 ? '+' : ''}
-              color="red"
-            />
+            <StatBox icon={Utensils} value={stats.dishes} label="طبق" color="amber" loaded={statsLoaded} />
+            <div className="col-span-3 border-t border-stone-100 -mx-6" />
+            <div className="col-span-3">
+              <StatBox icon={Heart} value={stats.orders} label="طلب سعيد" color="red" loaded={statsLoaded} fullWidth />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* قصتنا - بحكاية إنسانية */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <div className="w-1.5 h-5 bg-orange-500 rounded-full" />
+      {/* ═══════════════════════════════════════════ */}
+      {/* STORY */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="max-w-4xl mx-auto px-4 mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full" />
           <h2 className="text-lg font-extrabold text-stone-800">قصتنا</h2>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
-          {/* اقتباس مؤثّر */}
-          <div className="relative bg-gradient-to-bl from-amber-50 to-orange-50 p-5 border-b border-orange-100">
-            <Quote
-              className="absolute top-3 right-3 w-6 h-6 text-orange-300 scale-x-[-1]"
-              strokeWidth={2.5}
-            />
-            <p className="text-stone-800 text-base md:text-lg font-extrabold leading-relaxed pr-6 italic">
+        <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden">
+          <div className="relative p-6 border-b border-orange-100" style={{ background: 'linear-gradient(135deg, #FFF7ED, #FEF3C7)' }}>
+            <Quote className="absolute top-4 right-4 w-7 h-7 text-orange-300 scale-x-[-1]" strokeWidth={2} />
+            <p className="text-stone-800 text-base md:text-lg font-extrabold leading-relaxed pr-8 italic">
               "في كل حي من أحياء بشار، هناك طباخة ماهرة. أكلها كنز لا يصل إلى أحد خارج عائلتها."
             </p>
           </div>
 
-          {/* القصة */}
-          <div className="p-5 space-y-3">
+          <div className="p-6 space-y-4">
             <p className="text-sm text-stone-700 leading-relaxed">
               هذه الفكرة كانت بداية{' '}
-              <span className="font-black text-orange-600">نَكهة</span>. أردنا
-              أن نربط تلك الطباخات الموهوبات بالعائلات الباحثة عن طعام دافئ
-              وأصيل — طعام يشبه طعم الجدة، ليس طعم المطاعم.
+              <span className="font-black" style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                نَكهة
+              </span>
+              . أردنا أن نربط تلك الطباخات الموهوبات بالعائلات الباحثة عن طعام دافئ وأصيل — طعام يشبه طعم الجدة، ليس طعم المطاعم.
             </p>
             <p className="text-sm text-stone-700 leading-relaxed">
               نحن نؤمن أن الطعام البيتي ليس مجرد وجبة، بل{' '}
-              <span className="font-bold">ذكرى وعاطفة</span>. ونريد أن نجعل هذا
-              الكنز في متناول الجميع، بينما نُمكّن الطباخات من تحويل موهبتهن
-              إلى مصدر دخل كريم.
+              <span className="font-bold text-orange-700">ذكرى وعاطفة</span>. ونريد أن نجعل هذا الكنز في متناول الجميع، بينما نُمكّن الطباخات من تحويل موهبتهن إلى مصدر دخل كريم.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* قيمنا */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <div className="w-1.5 h-5 bg-amber-500 rounded-full" />
+      {/* ═══════════════════════════════════════════ */}
+      {/* VALUES */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="max-w-4xl mx-auto px-4 mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full" />
           <h2 className="text-lg font-extrabold text-stone-800">ما يحرّكنا</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <ValueCard
-            icon={Heart}
-            title="طعام بحب"
-            desc="كل طبق مطبوخ كما لو كان لعائلة الطباخة"
-            color="red"
-          />
-          <ValueCard
-            icon={Shield}
-            title="ثقة مُستحقة"
-            desc="طباخات مُوثّقات من فريقنا قبل الانضمام"
-            color="green"
-          />
-          <ValueCard
-            icon={Users}
-            title="مجتمع أولاً"
-            desc="ندعم طباخات الحي، ليس شركات مجهولة"
-            color="blue"
-          />
-          <ValueCard
-            icon={Sparkles}
-            title="جودة شفافة"
-            desc="تقييمات حقيقية من زبائن حقيقيين"
-            color="amber"
-          />
+          <ValueCard icon={Heart}    title="طعام بحب"       desc="كل طبق مطبوخ كما لو كان لعائلة الطباخة"          accent="#F43F5E" />
+          <ValueCard icon={Shield}   title="ثقة مُستحقة"   desc="طباخات مُوثّقات من فريقنا قبل الانضمام"          accent="#22C55E" />
+          <ValueCard icon={Users}    title="مجتمع أولاً"   desc="ندعم طباخات الحي، ليس شركات مجهولة"              accent="#3B82F6" />
+          <ValueCard icon={Sparkles} title="جودة شفافة"    desc="تقييمات حقيقية من زبائن حقيقيين"                accent="#F59E0B" />
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* دعوات - طباخة أم زبونة؟ */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <div className="w-1.5 h-5 bg-green-500 rounded-full" />
-          <h2 className="text-lg font-extrabold text-stone-800">
-            كيف تبدأين؟
-          </h2>
+      {/* ═══════════════════════════════════════════ */}
+      {/* CTA — dark brick */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="max-w-4xl mx-auto px-4 mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-gradient-to-b from-green-400 to-emerald-600 rounded-full" />
+          <h2 className="text-lg font-extrabold text-stone-800">كيف تبدئين؟</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* للزبائن */}
-          <Link
-            to="/cooks"
-            className="relative bg-white rounded-3xl overflow-hidden p-5 shadow-sm hover:shadow-lg active:scale-[0.98] transition-all group border border-stone-100"
-          >
-            <div className="absolute -top-4 -left-4 w-20 h-20 bg-orange-100 rounded-full blur-xl" />
+          {/* customer CTA */}
+          <Link to="/cooks"
+                className="relative bg-white rounded-3xl overflow-hidden p-5 shadow-sm border border-stone-100 hover:shadow-lg active:scale-[0.98] transition-all group">
+            <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full opacity-30 pointer-events-none"
+                 style={{ background: 'radial-gradient(circle, #FB923C, transparent)' }} />
             <div className="relative">
-              <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md mb-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md mb-3"
+                   style={{ background: 'linear-gradient(135deg, #FB923C, #EA580C)' }}>
                 <ShoppingBag className="w-5 h-5 text-white" strokeWidth={2.3} />
               </div>
-              <h3 className="font-black text-stone-800 text-base mb-1">
-                أبحث عن طعام
-              </h3>
+              <h3 className="font-black text-stone-800 text-base mb-1">أبحث عن طعام</h3>
               <p className="text-xs text-stone-500 leading-relaxed mb-3">
                 تصفّحي الطباخات واطلبي أطباقك المفضلة
               </p>
@@ -254,23 +205,23 @@ const About = () => {
             </div>
           </Link>
 
-          {/* للطباخات */}
-          <Link
-            to="/cook/signup"
-            className="relative bg-gradient-to-bl from-amber-50 via-orange-50 to-amber-100 rounded-3xl overflow-hidden p-5 shadow-sm hover:shadow-lg active:scale-[0.98] transition-all group border border-amber-200"
-          >
-            <div className="absolute -top-4 -right-4 w-20 h-20 bg-amber-300/40 rounded-full blur-xl" />
+          {/* cook CTA */}
+          <Link to="/cook/signup"
+                className="relative rounded-3xl overflow-hidden p-5 shadow-sm hover:shadow-lg active:scale-[0.98] transition-all group"
+                style={{ background: 'linear-gradient(135deg, #7C2800, #3D1200)' }}>
+            {/* dot pattern */}
+            <div className="absolute inset-0 pointer-events-none opacity-20"
+                 style={{ backgroundImage: 'radial-gradient(circle, rgba(251,191,36,0.6) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
             <div className="relative">
-              <div className="w-11 h-11 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-md mb-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md mb-3"
+                   style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)' }}>
                 <ChefHat className="w-5 h-5 text-white" strokeWidth={2.3} />
               </div>
-              <h3 className="font-black text-stone-800 text-base mb-1">
-                أنا طباخة
-              </h3>
-              <p className="text-xs text-stone-700 leading-relaxed mb-3">
+              <h3 className="font-black text-white text-base mb-1">أنا طباخة</h3>
+              <p className="text-xs text-amber-300/80 leading-relaxed mb-3">
                 انضمّي وابدئي ببيع أطباقك من بيتك
               </p>
-              <span className="inline-flex items-center gap-1 text-xs font-black text-amber-700 group-hover:gap-2 transition-all">
+              <span className="inline-flex items-center gap-1 text-xs font-black text-amber-300 group-hover:gap-2 transition-all">
                 سجّلي الآن
                 <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.8} />
               </span>
@@ -279,170 +230,104 @@ const About = () => {
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* تواصل معنا */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4 mb-8">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <div className="w-1.5 h-5 bg-blue-500 rounded-full" />
+      {/* ═══════════════════════════════════════════ */}
+      {/* CONTACT */}
+      {/* ═══════════════════════════════════════════ */}
+      <section className="max-w-4xl mx-auto px-4 mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-1 h-5 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full" />
           <h2 className="text-lg font-extrabold text-stone-800">تواصل معنا</h2>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm overflow-hidden divide-y divide-stone-100">
-          {/* واتساب */}
-          <a
-            href={supportWhatsApp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 hover:bg-green-50 active:bg-green-100 transition-all group"
-          >
+        <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden divide-y divide-stone-100">
+          <a href={supportWhatsApp} target="_blank" rel="noopener noreferrer"
+             className="flex items-center gap-4 p-4 hover:bg-green-50 active:bg-green-100 transition-all group">
             <div className="w-11 h-11 bg-green-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md shadow-green-500/30">
               <MessageCircle className="w-5 h-5 text-white" strokeWidth={2.4} />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1">
               <p className="text-sm font-extrabold text-stone-800">واتساب</p>
-              <p className="text-[11px] text-stone-500 mt-0.5">
-                الأسرع — نرد خلال ساعة
-              </p>
+              <p className="text-[11px] text-stone-500 mt-0.5">الأسرع — نرد خلال ساعة</p>
             </div>
-            <ArrowLeft
-              className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform"
-              strokeWidth={2.5}
-            />
+            <ArrowLeft className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
           </a>
 
-          {/* البريد */}
-          <a
-            href="mailto:contact@nakha.dz"
-            className="flex items-center gap-3 p-4 hover:bg-orange-50 active:bg-orange-100 transition-all group"
-          >
-            <div className="w-11 h-11 bg-orange-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-500/30">
+          <a href="mailto:contact@nakha.dz"
+             className="flex items-center gap-4 p-4 hover:bg-orange-50 active:bg-orange-100 transition-all group">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-500/30"
+                 style={{ background: 'linear-gradient(135deg, #FB923C, #EA580C)' }}>
               <Mail className="w-5 h-5 text-white" strokeWidth={2.4} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-extrabold text-stone-800">
-                البريد الإلكتروني
-              </p>
-              <p
-                className="text-[11px] text-orange-600 mt-0.5 font-bold"
-                dir="ltr"
-                style={{ textAlign: 'right' }}
-              >
+            <div className="flex-1">
+              <p className="text-sm font-extrabold text-stone-800">البريد الإلكتروني</p>
+              <p className="text-[11px] text-orange-600 mt-0.5 font-bold" dir="ltr" style={{ textAlign: 'right' }}>
                 contact@nakha.dz
               </p>
             </div>
-            <ArrowLeft
-              className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform"
-              strokeWidth={2.5}
-            />
+            <ArrowLeft className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
           </a>
         </div>
       </section>
 
-      {/* ============================================ */}
-      {/* Footer خاص */}
-      {/* ============================================ */}
-      <section className="max-w-4xl mx-auto px-4">
-        <div className="text-center py-4">
-          <p className="text-xs text-stone-500 mb-1">
-            صُنع في بشار{' '}
-            <Heart className="w-3 h-3 inline fill-red-400 text-red-400" /> للجزائر
-          </p>
-          <div className="flex items-center justify-center gap-3 text-[11px] mt-2 flex-wrap">
-            <Link
-              to="/privacy"
-              className="text-stone-600 hover:text-orange-600 font-bold"
-            >
-              سياسة الخصوصية
-            </Link>
-            <span className="text-stone-300">•</span>
-            <Link
-              to="/terms"
-              className="text-stone-600 hover:text-orange-600 font-bold"
-            >
-              الشروط والأحكام
-            </Link>
-            <span className="text-stone-300">•</span>
-            <Link
-              to="/"
-              className="text-stone-600 hover:text-orange-600 font-bold"
-            >
-              الرئيسية
-            </Link>
+      {/* ═══════════════════════════════════════════ */}
+      {/* FOOTER */}
+      {/* ═══════════════════════════════════════════ */}
+      <footer className="max-w-4xl mx-auto px-4 text-center py-6">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #FBBF24, #F97316)' }}>
+            <ChefHat className="w-3.5 h-3.5 text-white" strokeWidth={2.3} />
           </div>
-          <p className="text-[10px] text-stone-400 mt-2">© 2026 نَكهة</p>
+          <span className="font-black text-stone-700 text-sm">نَكهة</span>
         </div>
-      </section>
+        <p className="text-[11px] text-stone-500 mb-2">صُنع في بشار <Heart className="w-3 h-3 inline fill-red-400 text-red-400" /> للجزائر</p>
+        <div className="flex items-center justify-center gap-3 text-[11px] mb-2 flex-wrap">
+          <Link to="/privacy" className="text-stone-500 hover:text-orange-600 font-bold transition-colors">سياسة الخصوصية</Link>
+          <span className="text-stone-300">•</span>
+          <Link to="/terms" className="text-stone-500 hover:text-orange-600 font-bold transition-colors">الشروط والأحكام</Link>
+          <span className="text-stone-300">•</span>
+          <Link to="/" className="text-stone-500 hover:text-orange-600 font-bold transition-colors">الرئيسية</Link>
+        </div>
+        <p className="text-[10px] text-stone-400">© 2026 نَكهة</p>
+      </footer>
     </div>
   );
 };
 
-/* ============================================ */
-/* بطاقة إحصائية */
-/* ============================================ */
-function StatBox({ icon: Icon, value, label, suffix, color }) {
-  const colors = {
-    orange: 'bg-orange-100 text-orange-600',
-    amber: 'bg-amber-100 text-amber-600',
-    red: 'bg-red-100 text-red-500',
+function StatBox({ icon: Icon, value, label, color, loaded, fullWidth }) {
+  const palette = {
+    orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+    amber:  { bg: 'bg-amber-100',  text: 'text-amber-600'  },
+    red:    { bg: 'bg-red-100',    text: 'text-red-500'    },
   };
+  const c = palette[color];
   return (
-    <div className="text-center py-1">
-      <div
-        className={`w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center ${colors[color]}`}
-      >
+    <div className={`text-center py-2 ${fullWidth ? 'pt-4' : ''}`}>
+      <div className={`w-10 h-10 ${c.bg} ${c.text} rounded-xl mx-auto mb-2 flex items-center justify-center`}>
         <Icon className="w-4 h-4" strokeWidth={2.4} />
       </div>
-      <p className="text-xl font-black text-stone-800 leading-none">
-        {value}
-        {suffix && <span className="text-sm font-bold text-stone-400">{suffix}</span>}
-      </p>
+      {loaded ? (
+        <p className="text-2xl font-black text-stone-800 leading-none">
+          {value}<span className="text-sm font-bold text-stone-400">+</span>
+        </p>
+      ) : (
+        <div className="h-7 w-12 bg-stone-100 rounded-lg mx-auto animate-pulse" />
+      )}
       <p className="text-[10px] text-stone-500 font-bold mt-1">{label}</p>
     </div>
   );
 }
 
-/* ============================================ */
-/* بطاقة قيمة */
-/* ============================================ */
-function ValueCard({ icon: Icon, title, desc, color }) {
-  const colors = {
-    red: {
-      bg: 'bg-red-50',
-      border: 'border-red-100',
-      icon: 'bg-red-500',
-    },
-    green: {
-      bg: 'bg-green-50',
-      border: 'border-green-100',
-      icon: 'bg-green-500',
-    },
-    blue: {
-      bg: 'bg-blue-50',
-      border: 'border-blue-100',
-      icon: 'bg-blue-500',
-    },
-    amber: {
-      bg: 'bg-amber-50',
-      border: 'border-amber-100',
-      icon: 'bg-amber-500',
-    },
-  };
-  const c = colors[color];
+function ValueCard({ icon: Icon, title, desc, accent }) {
   return (
-    <div
-      className={`${c.bg} border ${c.border} rounded-2xl p-4 flex items-start gap-3`}
-    >
-      <div
-        className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm`}
-      >
-        <Icon className="w-5 h-5 text-white" strokeWidth={2.3} />
+    <div className="bg-white rounded-3xl shadow-sm border border-stone-100 p-4 flex items-start gap-3">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+           style={{ background: accent + '20' }}>
+        <Icon className="w-5 h-5" style={{ color: accent }} strokeWidth={2.3} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div>
         <p className="font-extrabold text-stone-800 text-sm">{title}</p>
-        <p className="text-[11px] text-stone-600 leading-relaxed mt-1">
-          {desc}
-        </p>
+        <p className="text-[11px] text-stone-500 leading-relaxed mt-0.5">{desc}</p>
       </div>
     </div>
   );
