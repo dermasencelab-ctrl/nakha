@@ -7,8 +7,19 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-orange-600 text-xl">جاري التحميل...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FFF5E6]" dir="rtl">
+        <div className="flex flex-col items-center gap-4">
+          {/* Brand icon with pulse ring */}
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-orange-400/30 animate-ping" />
+            <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <span className="text-2xl">🍳</span>
+            </div>
+          </div>
+          <p className="text-stone-500 font-semibold text-sm animate-pulse">
+            جاري التحميل...
+          </p>
+        </div>
       </div>
     );
   }

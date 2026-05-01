@@ -93,13 +93,13 @@ function CookCard({ cook }) {
         {/* تدرج سفلي لقراءة النص */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-        {/* شارة متاحة / مغلقة (أعلى يمين) */}
+        {/* شارة متاحة / مغلقة — أسفل زر القلب */}
         {closedBySchedule ? (
-          <div className="absolute top-3 right-3 flex items-center gap-1 bg-stone-700/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-bold">
+          <div className="absolute top-12 right-3 flex items-center gap-1 bg-stone-700/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-bold">
             🕐 مغلقة الآن
           </div>
         ) : isAvailable ? (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-lg shadow-green-500/40">
+          <div className="absolute top-12 right-3 flex items-center gap-1.5 bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-lg shadow-green-500/40">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
@@ -228,11 +228,11 @@ function CookCard({ cook }) {
       </div>
       </Link>
 
-      {/* زر القلب — خارج الـLink لتجنب التنقل عند الضغط */}
+      {/* زر القلب — أعلى يمين، خارج الـLink لتجنب التنقل عند الضغط */}
       <button
         onClick={() => toggle(cook.id)}
         aria-label={favorited ? 'إزالة من المفضّلة' : 'إضافة للمفضّلة'}
-        className={`absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 ${
+        className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 ${
           favorited
             ? 'bg-red-500 text-white shadow-red-400/50'
             : 'bg-white/90 backdrop-blur-sm text-stone-400 hover:text-red-400'

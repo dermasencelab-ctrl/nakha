@@ -103,8 +103,8 @@ export default function Navbar() {
         dir="rtl"
         className={`fixed top-0 right-0 left-0 z-40 transition-all duration-300 pt-safe ${
           scrolled
-            ? 'bg-white/90 backdrop-blur-xl shadow-sm border-b border-orange-100/50'
-            : 'bg-gradient-to-b from-white/95 to-white/80 backdrop-blur-md'
+            ? 'bg-[#FFF5E6]/95 backdrop-blur-xl shadow-sm border-b border-orange-100/60'
+            : 'bg-[#FFF5E6]/80 backdrop-blur-md'
         }`}
       >
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -206,7 +206,7 @@ export default function Navbar() {
         className="md:hidden fixed bottom-0 right-0 left-0 z-40 pb-safe"
       >
         {/* تأثير blur في الخلفية */}
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-xl border-t border-orange-100/60" />
+        <div className="absolute inset-0 bg-[#FFF5E6]/92 backdrop-blur-xl border-t border-orange-100/60" />
 
         <div className="relative max-w-6xl mx-auto px-2">
           <div className="flex items-center justify-around h-16">
@@ -283,7 +283,7 @@ export default function Navbar() {
       {/* Drawer */}
       <aside
         dir="rtl"
-        className={`fixed top-0 bottom-0 left-0 z-50 w-[85%] max-w-sm bg-gradient-to-b from-orange-50/50 to-white transition-transform duration-300 ease-out shadow-2xl ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-[85%] max-w-sm bg-[#FFF5E6] transition-transform duration-300 ease-out shadow-2xl ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
