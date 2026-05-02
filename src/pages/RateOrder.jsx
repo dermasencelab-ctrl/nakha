@@ -3,9 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   doc,
   getDoc,
-  addDoc,
+  setDoc,
   collection,
-  updateDoc,
   runTransaction,
   serverTimestamp,
   query,
@@ -64,8 +63,9 @@ const RateOrder = () => {
 
     setSubmitting(true);
     try {
-      // حفظ التقييم
-      await addDoc(collection(db, 'ratings'), {
+      // Use orderId as document ID — Firestore rule enforces ratingId == orderId,
+      // so setDoc will fail if a rating for this order already exists.
+      await setDoc(doc(db, 'ratings', orderId), {
         orderId,
         cookId: order.cookId,
         customerName: order.customerName || '',
@@ -75,7 +75,7 @@ const RateOrder = () => {
         createdAt: serverTimestamp(),
       });
 
-      // تحديث إحصائيات الطباخة (transaction لمنع race condition)
+      // Update cook rating stats atomically (race-condition safe).
       const cookRef = doc(db, 'cooks', order.cookId);
       await runTransaction(db, async (transaction) => {
         const cookSnap = await transaction.get(cookRef);
@@ -88,11 +88,6 @@ const RateOrder = () => {
           totalRatings: newTotal,
           averageRating: parseFloat((newSum / newTotal).toFixed(2)),
         });
-      });
-
-      // تحديث الطلب ليدل على أنه قُيّم
-      await updateDoc(doc(db, 'orders', orderId), {
-        rated: true,
       });
 
       navigate('/', { replace: true });

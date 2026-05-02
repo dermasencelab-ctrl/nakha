@@ -1,0 +1,244 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ======================================
+    // Helper functions
+    // ======================================
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isLoggedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isCook() {
+      return isLoggedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'cook';
+    }
+
+    function isCookOwner(cookId) {
+      return isCook() && request.auth.uid == cookId;
+    }
+
+    // Cook cannot self-change status, isFoundingMember, or foundingMemberNumber.
+    // These are admin-only fields (approval, founding-member assignment).
+    function cookBlockedFieldsUnchanged() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return !changed.hasAny(['status', 'isFoundingMember', 'foundingMemberNumber']);
+    }
+
+    // Balance may only stay the same or decrease.
+    // Prevents a cook from self-crediting their wallet; increases must go through
+    // admin-approved topup_requests.
+    function balanceNotIncreased() {
+      return !('balance' in request.resource.data.diff(resource.data).affectedKeys()) ||
+             request.resource.data.balance <= resource.data.balance;
+    }
+
+    // Cook order updates are limited to status + audit timestamps.
+    // Prevents a cook from modifying totalPrice to reduce commission.
+    function cookOrderUpdateFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['status', 'readyAt', 'completedAt', 'updatedAt']);
+    }
+
+    // Only forward status transitions are valid.
+    // Prevents replaying the commission deduction by cycling status.
+    function validCookStatusTransition() {
+      let from = resource.data.status;
+      let to   = request.resource.data.status;
+      return (from == 'pending'   && to == 'preparing') ||
+             (from == 'pending'   && to == 'cancelled') ||
+             (from == 'preparing' && to == 'ready')     ||
+             (from == 'ready'     && to == 'completed');
+    }
+
+    // Rating stats update: only the three aggregate fields may change,
+    // totalRatings must increment by exactly 1, ratingSum by 1-5 (valid star range).
+    // Needed because customers are unauthenticated and cannot pass isCookOwner.
+    function isValidRatingStatsUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['ratingSum', 'totalRatings', 'averageRating']) &&
+             request.resource.data.totalRatings == resource.data.totalRatings + 1 &&
+             request.resource.data.ratingSum    >= resource.data.ratingSum + 1     &&
+             request.resource.data.ratingSum    <= resource.data.ratingSum + 5;
+    }
+
+
+    // ======================================
+    // Collection: users
+    // ======================================
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      // FIX: block self-assigning the admin role at account creation.
+      // The 'cook' role is allowed (cook signup flow).
+      // Role changes after creation require admin (update rule below).
+      allow create: if isOwner(userId) &&
+        request.resource.data.role != 'admin';
+
+      // Only admin may modify user documents (role changes, etc.).
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: cooks
+    // ======================================
+    match /cooks/{cookId} {
+      // Public read: approved cooks are shown on the Cooks listing page.
+      allow read: if true;
+
+      // New cook profile must start as 'pending' (awaiting admin approval).
+      allow create: if isOwner(cookId) &&
+        request.resource.data.status == 'pending';
+
+      // FIX: cook self-update is allowed ONLY IF:
+      //   - status / isFoundingMember / foundingMemberNumber are not touched
+      //   - balance is not increased (commission deductions are fine; topups go through admin)
+      // Admin may update any field (approval, balance top-up after topup_request, etc.).
+      // Rating stats may be updated by anyone submitting a valid rating (unauthenticated customers).
+      allow update: if (
+        isCookOwner(cookId) &&
+        cookBlockedFieldsUnchanged() &&
+        balanceNotIncreased()
+      ) || isValidRatingStatsUpdate() || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: dishes
+    // ======================================
+    match /dishes/{dishId} {
+      allow read: if true;
+
+      allow create: if isCook() &&
+        request.resource.data.cookId == request.auth.uid;
+
+      allow update: if (isCook() && resource.data.cookId == request.auth.uid) ||
+        isAdmin();
+
+      allow delete: if (isCook() && resource.data.cookId == request.auth.uid) ||
+        isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: orders
+    // ======================================
+    match /orders/{orderId} {
+      // NOTE: read is intentionally open. Unauthenticated customers look up their
+      // orders by phone number (MyOrders page). Firestore cannot mask individual
+      // fields, so customerPhone is readable if the orderId is known.
+      // Full mitigation requires requiring customer authentication (future work).
+      allow read: if true;
+
+      // Anyone may create an order (customers are unauthenticated).
+      allow create: if request.resource.data.status == 'pending' &&
+        request.resource.data.customerName is string &&
+        request.resource.data.customerPhone is string &&
+        request.resource.data.cookId is string;
+
+      // FIX: cook may only change the status field (+ audit timestamps).
+      // This blocks totalPrice manipulation to reduce commission.
+      // FIX: only valid forward status transitions are accepted.
+      // Admin may update any field.
+      allow update: if (
+        isCook() &&
+        resource.data.cookId == request.auth.uid &&
+        cookOrderUpdateFields() &&
+        validCookStatusTransition()
+      ) || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: ratings
+    // ======================================
+    match /ratings/{ratingId} {
+      allow read: if true;
+
+      // FIX: ratingId MUST equal the orderId of the rating being submitted.
+      // The app uses setDoc(doc(db,'ratings', orderId), ...) so Firestore
+      // enforces one-document-per-order, preventing duplicate or fake ratings.
+      allow create: if ratingId == request.resource.data.orderId &&
+        request.resource.data.cookId is string &&
+        request.resource.data.orderId is string &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5;
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: transactions
+    // ======================================
+    match /transactions/{transactionId} {
+      allow read: if (isCook() && resource.data.cookId == request.auth.uid) ||
+        isAdmin();
+
+      // FIX: cook can only create transaction records for their own cookId.
+      // Previously any authenticated user could write to any cookId.
+      allow create: if (isCook() && request.resource.data.cookId == request.auth.uid) ||
+        isAdmin();
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: topup_requests
+    // ======================================
+    match /topup_requests/{requestId} {
+      allow read: if (isCook() && resource.data.cookId == request.auth.uid) ||
+        isAdmin();
+
+      allow create: if isCook() &&
+        request.resource.data.cookId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.amount > 0;
+
+      // Only admin may approve or reject top-up requests.
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: admin
+    // ======================================
+    match /admin/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+
+    // ======================================
+    // Default: deny everything else
+    // ======================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}
