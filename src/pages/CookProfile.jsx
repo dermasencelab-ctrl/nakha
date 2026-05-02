@@ -25,6 +25,14 @@ import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { DAYS, isInSchedule } from '../utils/schedule';
 
+const PREP_TIME_LABELS = {
+  30: '30 دقيقة', 60: 'ساعة', 90: 'ساعة ونصف', 120: 'ساعتان',
+  180: '3 ساعات', 240: '4 ساعات', 360: '6 ساعات', 480: '8 ساعات',
+  720: '12 ساعة', 1440: '24 ساعة', 2880: 'يومان',
+};
+const formatPrepTime = (mins) =>
+  PREP_TIME_LABELS[mins] || (mins < 60 ? `${mins} دقيقة` : `${Math.floor(mins / 60)} ساعات`);
+
 const getUnitLabel = (unit) => {
   const labels = {
     plate: 'طبق',
@@ -534,6 +542,16 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage, cookCl
           )}
         </div>
 
+        {/* شارة مدة التحضير — أسفل الصورة */}
+        {dish.prepTime > 0 && (
+          <div className="absolute bottom-3 right-3">
+            <div className="flex items-center gap-1 bg-stone-900/75 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-lg">
+              <Clock className="w-3 h-3" strokeWidth={2.5} />
+              {formatPrepTime(dish.prepTime)}
+            </div>
+          </div>
+        )}
+
         {/* شارة الكمية في السلة */}
         {inCartQty > 0 && (
           <div className="absolute top-3 left-3 bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-lg animate-scale-in">
@@ -555,11 +573,13 @@ function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage, cookCl
           </p>
         )}
 
-        {/* مدة التحضير */}
+        {/* شارة مدة التحضير */}
         {dish.prepTime > 0 && (
-          <div className="flex items-center gap-1 text-[11px] text-blue-600 font-bold mb-2">
-            <Clock className="w-3 h-3" strokeWidth={2.5} />
-            يجهّز في {dish.prepTime} دقيقة
+          <div className="mb-2">
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-[11px] font-extrabold">
+              <Clock className="w-3 h-3 text-amber-600" strokeWidth={2.5} />
+              يجهّز في {formatPrepTime(dish.prepTime)}
+            </span>
           </div>
         )}
 

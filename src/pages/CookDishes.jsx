@@ -6,7 +6,29 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import ImageUploader from '../components/ImageUploader';
-import { ArrowRight, Plus, ChefHat } from 'lucide-react';
+import { ArrowRight, Plus, ChefHat, Clock } from 'lucide-react';
+
+const PREP_TIME_OPTIONS = [
+  { value: '30',   label: '30 دقيقة' },
+  { value: '60',   label: 'ساعة واحدة' },
+  { value: '90',   label: 'ساعة ونصف' },
+  { value: '120',  label: 'ساعتان' },
+  { value: '180',  label: '3 ساعات' },
+  { value: '240',  label: '4 ساعات' },
+  { value: '360',  label: '6 ساعات' },
+  { value: '480',  label: '8 ساعات' },
+  { value: '720',  label: '12 ساعة' },
+  { value: '1440', label: 'يوم كامل (24 ساعة)' },
+  { value: '2880', label: 'يومان (48 ساعة)' },
+];
+
+const PREP_TIME_LABELS = {
+  30: '30 دقيقة', 60: 'ساعة', 90: 'ساعة ونصف', 120: 'ساعتان',
+  180: '3 ساعات', 240: '4 ساعات', 360: '6 ساعات', 480: '8 ساعات',
+  720: '12 ساعة', 1440: '24 ساعة', 2880: 'يومان',
+};
+const formatPrepTime = (mins) =>
+  PREP_TIME_LABELS[mins] || (mins < 60 ? `${mins} دقيقة` : `${Math.floor(mins / 60)} ساعات`);
 
 const CookDishes = () => {
   const { userProfile } = useAuth();
@@ -105,6 +127,7 @@ const CookDishes = () => {
     e.preventDefault();
     if (!formData.name.trim()) { alert('يرجى إدخال اسم الطبق'); return; }
     if (!formData.price || parseFloat(formData.price) <= 0) { alert('يرجى إدخال سعر صحيح'); return; }
+    if (!formData.prepTime) { alert('يرجى تحديد مدة التحضير — هذا الحقل إلزامي'); return; }
 
     setSubmitting(true);
     try {
@@ -224,7 +247,10 @@ const CookDishes = () => {
                       <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-bold border border-green-100">⚡ متاح فوراً</span>
                     )}
                     {dish.prepTime > 0 && (
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-bold border border-blue-100">⏱️ {dish.prepTime} دقيقة</span>
+                      <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold border border-amber-200">
+                        <Clock className="w-3 h-3" strokeWidth={2.5} />
+                        {formatPrepTime(dish.prepTime)}
+                      </span>
                     )}
                   </div>
 
@@ -359,8 +385,29 @@ const CookDishes = () => {
                   label="صورة الطبق"
                 />
 
-                <div className="bg-orange-50 rounded-2xl p-4 space-y-3 border border-orange-100">
-                  <div className="flex items-center gap-3">
+                <div className="bg-amber-50 rounded-2xl p-4 space-y-3 border border-amber-200">
+                  <div>
+                    <label className="flex items-center gap-1.5 text-stone-800 mb-2 font-black text-sm">
+                      <Clock className="w-4 h-4 text-amber-600" strokeWidth={2.5} />
+                      مدة التحضير *
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">إلزامي</span>
+                    </label>
+                    <select
+                      value={formData.prepTime}
+                      onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 bg-white border-2 border-amber-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-400 outline-none transition text-sm font-bold text-stone-800"
+                    >
+                      <option value="">— اختر مدة التحضير —</option>
+                      {PREP_TIME_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-amber-700 mt-1.5 leading-relaxed">
+                      سيُعرض هذا للزبائن كشارة واضحة على بطاقة طبقك لإدارة توقعاتهم
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 pt-1 border-t border-amber-200">
                     <input
                       type="checkbox"
                       id="readyNow"
@@ -369,22 +416,8 @@ const CookDishes = () => {
                       className="w-5 h-5 text-orange-600 rounded"
                     />
                     <label htmlFor="readyNow" className="text-stone-700 font-bold text-sm">
-                      ⚡ يتوفر تحضير فوري — الطبق جاهز الآن
+                      ⚡ الطبق جاهز الآن — يتوفر تحضير فوري
                     </label>
-                  </div>
-                  <div>
-                    <label className="block text-stone-700 mb-1.5 font-bold text-xs">
-                      ⏱️ مدة التحضير (بالدقائق) — اختياري
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="300"
-                      value={formData.prepTime}
-                      onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
-                      placeholder="مثال: 30"
-                      className="w-full px-4 py-2.5 bg-white border-2 border-stone-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-400 outline-none transition text-sm"
-                    />
                   </div>
                 </div>
 

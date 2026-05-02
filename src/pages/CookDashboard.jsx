@@ -46,7 +46,7 @@ const CookDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [togglingStatus, setTogglingStatus] = useState(false);
 
-  const { soundEnabled, toggleSound } = useOrderNotifications(userProfile?.cookId);
+  const { soundEnabled, toggleSound, newCount, clearNewCount } = useOrderNotifications(userProfile?.cookId);
 
   // إحصائيات ديناميكية
   const [stats, setStats] = useState({
@@ -305,6 +305,35 @@ const CookDashboard = () => {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 space-y-4">
+        {/* ============================================ */}
+        {/* 🔴 تنبيه وصول طلب جديد — فوري (real-time) */}
+        {/* ============================================ */}
+        {newCount > 0 && (
+          <button
+            onClick={() => { clearNewCount(); navigate('/cook/orders'); }}
+            className="w-full flex items-center justify-between gap-3 bg-gradient-to-l from-red-600 to-orange-500 text-white px-4 py-3.5 rounded-3xl shadow-xl shadow-red-500/40 animate-pulse active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Bell className="w-5 h-5" strokeWidth={2.4} />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-600 text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-red-500">
+                  {newCount}
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] font-bold opacity-90">طلب جديد وصل الآن!</p>
+                <p className="font-black text-sm leading-tight">
+                  {newCount === 1 ? 'اضغطي لعرض الطلب' : `${newCount} طلبات جديدة — اضغطي للعرض`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 bg-white/20 px-3 py-1.5 rounded-xl text-xs font-extrabold">
+              عرض
+              <ArrowLeft className="w-3.5 h-3.5" strokeWidth={2.8} />
+            </div>
+          </button>
+        )}
+
         {/* ============================================ */}
         {/* 🔔 تنبيه الطلبات المعلّقة - الأولوية القصوى */}
         {/* ============================================ */}

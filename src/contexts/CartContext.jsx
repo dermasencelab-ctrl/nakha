@@ -53,6 +53,7 @@ export const CartProvider = ({ children }) => {
           dishImage: dish.photo || dish.image || '',
           price: dish.price || 0,
           unit: dish.unit || 'plate',
+          prepTime: dish.prepTime || 0,
           quantity: 1,
           cookId: cook.id,
           cookName: cook.name,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Inbox,
   Calendar,
+  Search,
+  Hash,
 } from 'lucide-react';
 
 // إعدادات الحالات
@@ -196,54 +198,10 @@ function MyOrders() {
   };
 
   // ============================================
-  // غير مسجّل دخول — بوابة المصادقة
+  // غير مسجّل دخول — بحث برمز الطلب
   // ============================================
   if (!isLoggedInCustomer) {
-    return (
-      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] pb-24 md:pb-8">
-        <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md">
-          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Link to="/" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition">
-              <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
-            </Link>
-            <h1 className="text-xl font-extrabold text-stone-800">طلباتي</h1>
-          </div>
-        </header>
-
-        <div className="max-w-md mx-auto px-4 pt-10 text-center">
-          {/* أيقونة */}
-          <div className="relative inline-block mb-6">
-            <div className="absolute inset-0 bg-orange-400/20 rounded-3xl blur-2xl scale-150" />
-            <div className="relative w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/30 mx-auto">
-              <Package className="w-12 h-12 text-white" strokeWidth={2} />
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-black text-stone-800 mb-2">تتبّع طلباتك</h2>
-          <p className="text-sm text-stone-500 mb-8 max-w-xs mx-auto leading-relaxed">
-            سجّل حساباً مجانياً برقم هاتفك لتتبّع طلباتك وحماية خصوصيتك
-          </p>
-
-          <div className="space-y-3">
-            <Link
-              to="/customer/signup"
-              className="flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all"
-            >
-              <Package className="w-4 h-4" strokeWidth={2.5} />
-              تسجيل / دخول لعرض طلباتي
-            </Link>
-
-            <Link
-              to="/cooks"
-              className="flex items-center justify-center gap-2 bg-white border-2 border-stone-200 text-stone-600 hover:border-orange-300 hover:text-orange-600 py-3.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all"
-            >
-              <ChefHat className="w-4 h-4" strokeWidth={2.3} />
-              تصفّح الطباخات
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+    return <GuestOrderSearch formatDate={formatDate} formatTime={formatTime} />;
   }
 
   // ============================================
@@ -665,6 +623,186 @@ function EmptyState({ type, phone, activeTab }) {
       <div className="text-5xl mb-3">{msg.emoji}</div>
       <h3 className="font-extrabold text-stone-800 mb-1">{msg.title}</h3>
       <p className="text-sm text-stone-500">{msg.desc}</p>
+    </div>
+  );
+}
+
+/* ============================================ */
+/* بحث الزوار برمز الطلب */
+/* ============================================ */
+function GuestOrderSearch({ formatDate, formatTime }) {
+  const [inputValue, setInputValue] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [foundOrder, setFoundOrder] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    const rawId = inputValue.trim().replace(/^#/, '').toUpperCase();
+    if (!rawId) return;
+
+    setSearchLoading(true);
+    setFoundOrder(null);
+    setSearchError('');
+    setHasSearched(false);
+
+    try {
+      const orderRef = doc(db, 'orders', rawId);
+      const snap = await getDoc(orderRef);
+      if (snap.exists()) {
+        setFoundOrder({ id: snap.id, ...snap.data() });
+      } else {
+        setSearchError('لم يُعثر على طلب بهذا الرمز. تأكد من صحة الرمز وأعد المحاولة.');
+      }
+    } catch {
+      setSearchError('حدث خطأ أثناء البحث. تحقق من اتصالك بالإنترنت وحاول مجدداً.');
+    }
+
+    setSearchLoading(false);
+    setHasSearched(true);
+  };
+
+  const handleRefreshOrder = async () => {
+    if (!foundOrder) return;
+    setSearchLoading(true);
+    try {
+      const snap = await getDoc(doc(db, 'orders', foundOrder.id));
+      if (snap.exists()) setFoundOrder({ id: snap.id, ...snap.data() });
+    } catch {
+      // silent refresh failure
+    }
+    setSearchLoading(false);
+  };
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-[#FFF8F0] pb-24 md:pb-8">
+      {/* Header */}
+      <header className="sticky top-16 z-30 bg-[#FFF8F0]/95 backdrop-blur-md border-b border-orange-100/60">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link
+            to="/"
+            className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition"
+          >
+            <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
+          </Link>
+          <h1 className="text-xl font-extrabold text-stone-800">تتبّع طلبك</h1>
+        </div>
+      </header>
+
+      <div className="max-w-md mx-auto px-4 pt-8">
+        {/* Hero */}
+        <div className="text-center mb-8">
+          <div className="relative inline-block mb-5">
+            <div className="absolute inset-0 bg-orange-400/20 rounded-3xl blur-2xl scale-150" />
+            <div className="relative w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/30 mx-auto">
+              <Package className="w-10 h-10 text-white" strokeWidth={2} />
+            </div>
+          </div>
+          <h2 className="text-2xl font-black text-stone-800 mb-2">تتبّع حالة طلبك</h2>
+          <p className="text-sm text-stone-500 max-w-xs mx-auto leading-relaxed">
+            أدخل رمز طلبك للاطلاع على حالته الآنية دون الحاجة لتسجيل دخول
+          </p>
+        </div>
+
+        {/* Search form */}
+        <form onSubmit={handleSearch} className="mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-4 space-y-3">
+            <label className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+              <Hash className="w-3.5 h-3.5 text-orange-500" strokeWidth={2.5} />
+              رمز الطلب
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="مثال: #NR4RYERD"
+                dir="ltr"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-3 text-sm font-mono font-bold text-stone-800 placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition"
+              />
+              <button
+                type="submit"
+                disabled={searchLoading || !inputValue.trim()}
+                className="flex items-center gap-1.5 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/30 active:scale-95 transition-all"
+              >
+                {searchLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+                ) : (
+                  <Search className="w-4 h-4" strokeWidth={2.5} />
+                )}
+                بحث
+              </button>
+            </div>
+            <p className="text-[11px] text-stone-400 leading-relaxed">
+              رمز الطلب مذكور في رسالة تأكيد الطلب. يبدأ عادةً بـ #
+            </p>
+          </div>
+        </form>
+
+        {/* Loading skeleton */}
+        {searchLoading && !foundOrder && (
+          <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
+            <div className="h-10 animate-shimmer" />
+            <div className="p-4 flex gap-3">
+              <div className="w-20 h-20 rounded-2xl animate-shimmer flex-shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 animate-shimmer rounded-md" />
+                <div className="h-3 w-1/2 animate-shimmer rounded-md" />
+                <div className="h-3 w-1/3 animate-shimmer rounded-md mt-3" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {hasSearched && searchError && (
+          <div className="bg-white rounded-2xl border border-red-100 p-5 text-center shadow-sm">
+            <div className="text-4xl mb-3">🔍</div>
+            <h3 className="font-extrabold text-stone-800 mb-1">لم يُعثر على الطلب</h3>
+            <p className="text-sm text-stone-500 leading-relaxed">{searchError}</p>
+          </div>
+        )}
+
+        {/* Found order */}
+        {foundOrder && !searchLoading && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1 mb-1">
+              <p className="text-xs font-bold text-stone-500">نتيجة البحث</p>
+              <button
+                onClick={handleRefreshOrder}
+                className="flex items-center gap-1 text-xs font-bold text-orange-600 active:scale-95 transition"
+              >
+                <RefreshCw className="w-3.5 h-3.5" strokeWidth={2.5} />
+                تحديث
+              </button>
+            </div>
+            <OrderCard
+              order={foundOrder}
+              idx={0}
+              formatDate={formatDate}
+              formatTime={formatTime}
+            />
+          </div>
+        )}
+
+        {/* Divider & signup prompt */}
+        {!foundOrder && (
+          <div className="mt-8 pt-6 border-t border-stone-200 text-center space-y-3">
+            <p className="text-xs text-stone-400">تريد عرض كل طلباتك دفعة واحدة؟</p>
+            <Link
+              to="/cooks"
+              className="flex items-center justify-center gap-2 bg-white border-2 border-stone-200 text-stone-600 hover:border-orange-300 hover:text-orange-600 py-3 rounded-2xl font-bold text-sm active:scale-[0.98] transition-all"
+            >
+              <ChefHat className="w-4 h-4" strokeWidth={2.3} />
+              تصفّح الطباخات
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

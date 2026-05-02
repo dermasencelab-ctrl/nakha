@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import {
   ShoppingBag, ArrowRight, ArrowLeft, User, Phone, MapPin,
@@ -14,6 +14,14 @@ const getUnitLabel = (unit) => {
   return labels[unit] || '';
 };
 
+const PREP_LABELS = {
+  30: '30 دقيقة', 60: 'ساعة', 90: 'ساعة ونصف', 120: 'ساعتان',
+  180: '3 ساعات', 240: '4 ساعات', 360: '6 ساعات', 480: '8 ساعات',
+  720: '12 ساعة', 1440: '24 ساعة', 2880: 'يومان',
+};
+const formatPrepTime = (mins) =>
+  PREP_LABELS[mins] || (mins < 60 ? `${mins} دقيقة` : `${Math.floor(mins / 60)} ساعات`);
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, cookGroups, totalPrice, clearCart } = useCart();
@@ -25,10 +33,16 @@ const Checkout = () => {
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [requestedPickupTime, setRequestedPickupTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
+
+  // Compute the minimum allowed pickup based on the longest prep time in the cart
+  const maxPrepMinutes = Math.max(...cart.map((item) => item.prepTime || 0), 30);
+  const minPickupDate = new Date(Date.now() + maxPrepMinutes * 60 * 1000);
+  const minPickupISO = minPickupDate.toISOString().slice(0, 16);
 
   const validatePhone = (phone) => /^0[0-9]{9}$/.test(phone);
 
@@ -56,6 +70,13 @@ const Checkout = () => {
       if (!validatePhone(customerPhone)) { setError('رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0'); return false; }
     }
     if (step === 2) {
+      if (!requestedPickupTime) { setError('يرجى تحديد وقت الاستلام المطلوب'); return false; }
+      const pickupMs = new Date(requestedPickupTime).getTime();
+      const minMs = Date.now() + maxPrepMinutes * 60 * 1000 - 60_000;
+      if (pickupMs < minMs) {
+        setError(`وقت الاستلام يجب أن يكون بعد ${formatPrepTime(maxPrepMinutes)} على الأقل من الآن`);
+        return false;
+      }
       if (orderType === 'scheduled' && (!scheduledDate || !scheduledTime)) { setError('يرجى تحديد التاريخ والوقت للطلب المسبق'); return false; }
     }
     return true;
@@ -98,6 +119,7 @@ const Checkout = () => {
           orderType,
           scheduledDate: orderType === 'scheduled' ? scheduledDate : '',
           scheduledTime: orderType === 'scheduled' ? scheduledTime : '',
+          requestedPickupTime,
           notes: notes.trim() || '',
           status: 'pending',
           createdAt: serverTimestamp(),
@@ -106,6 +128,48 @@ const Checkout = () => {
       });
       const results = await Promise.all(orderPromises);
       const orderIds = results.map((r) => r.id);
+
+      // WhatsApp notifications to each cook
+      for (let i = 0; i < cookGroups.length; i++) {
+        const group = cookGroups[i];
+        const orderId = orderIds[i];
+        try {
+          const cookSnap = await getDoc(doc(db, 'cooks', group.cookId));
+          if (cookSnap.exists()) {
+            const cookPhone = cookSnap.data()?.phone;
+            if (cookPhone) {
+              const intlPhone = '213' + cookPhone.replace(/^0/, '');
+              const code = '#' + orderId.slice(0, 8).toUpperCase();
+              const itemsList = group.items
+                .map((it) => `  • ${it.dishName} ×${it.quantity}`)
+                .join('\n');
+              const pickupLabel = requestedPickupTime
+                ? new Date(requestedPickupTime).toLocaleString('ar-DZ', {
+                    weekday: 'long', hour: '2-digit', minute: '2-digit',
+                  })
+                : 'أقرب وقت';
+              const msg = [
+                `🍽️ طلب جديد على نَكهة!`,
+                ``,
+                `📋 رمز الطلب: ${code}`,
+                `👤 الزبون: ${customerName.trim()}`,
+                `💰 المجموع: ${group.subtotal.toLocaleString('ar-DZ')} دج`,
+                ``,
+                `🛒 الأطباق:`,
+                itemsList,
+                ``,
+                `🕐 موعد الاستلام: ${pickupLabel}`,
+                notes.trim() ? `📝 ملاحظات: ${notes.trim()}` : '',
+              ].filter(Boolean).join('\n');
+              window.open(
+                `https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`,
+                '_blank'
+              );
+            }
+          }
+        } catch { /* never block order completion on notification failure */ }
+      }
+
       clearCart();
       navigate('/order-success', { state: { orderIds, phone: customerPhone } });
     } catch (err) {
@@ -202,6 +266,35 @@ const Checkout = () => {
                   </div>
                 </div>
               )}
+
+              {/* وقت الاستلام المطلوب */}
+              <div className="pt-2 border-t border-stone-100 space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-stone-700">
+                  <Clock className="w-4 h-4 text-orange-500" strokeWidth={2.4} />
+                  وقت الاستلام المطلوب *
+                </label>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-3.5 py-2.5 flex items-start gap-2 mb-1">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2.3} />
+                  <p className="text-[11px] text-amber-800 leading-relaxed font-semibold">
+                    أقل وقت للتحضير: <span className="font-black">{formatPrepTime(maxPrepMinutes)}</span>
+                    {' — '}أقرب موعد متاح:{' '}
+                    <span className="font-black" dir="ltr">
+                      {minPickupDate.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}
+                      {' '}
+                      {minPickupDate.toLocaleDateString('ar-DZ', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </span>
+                  </p>
+                </div>
+                <input
+                  type="datetime-local"
+                  value={requestedPickupTime}
+                  onChange={(e) => setRequestedPickupTime(e.target.value)}
+                  min={minPickupISO}
+                  required
+                  className="w-full px-3 py-3 bg-stone-50 border-2 border-stone-200 rounded-2xl text-sm font-medium text-stone-700 focus:outline-none focus:border-orange-400 focus:bg-white transition"
+                />
+              </div>
+
               <div className="pt-2 border-t border-stone-100">
                 <label className="flex items-center justify-between mb-1.5">
                   <span className="flex items-center gap-2 text-xs font-bold text-stone-700">
@@ -265,6 +358,16 @@ const Checkout = () => {
                 <InfoRow icon={Phone} label="الهاتف" value={customerPhone} ltr />
                 {customerAddress && <InfoRow icon={MapPin} label="العنوان" value={customerAddress} />}
                 <InfoRow icon={orderType === 'instant' ? Zap : Clock} label="نوع الطلب" value={orderType === 'instant' ? 'فوري' : `مسبق: ${scheduledDate} - ${scheduledTime}`} />
+                {requestedPickupTime && (
+                  <InfoRow
+                    icon={Clock}
+                    label="موعد الاستلام"
+                    value={new Date(requestedPickupTime).toLocaleString('ar-DZ', {
+                      weekday: 'long', year: 'numeric', month: 'short',
+                      day: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                  />
+                )}
                 {notes && <InfoRow icon={MessageSquare} label="ملاحظات" value={notes} />}
               </div>
             </div>
