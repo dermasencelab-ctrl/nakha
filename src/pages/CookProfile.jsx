@@ -350,21 +350,24 @@ function CookProfile() {
       {/* ============================================ */}
       {/* عنوان الأطباق */}
       {/* ============================================ */}
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-3">
+      <div className="max-w-4xl mx-auto px-4 pt-5 pb-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <ChefHat className="w-5 h-5 text-white" strokeWidth={2.4} />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-500/30">
+              <ChefHat className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-stone-800 leading-none">
-                قائمة الأطباق
-              </h2>
-              <p className="text-xs text-stone-500 mt-1">
+              <h2 className="text-base font-black text-stone-800 leading-none">قائمة الأطباق</h2>
+              <p className="text-[11px] text-stone-400 font-semibold mt-0.5">
                 {dishes.length} {dishes.length === 1 ? 'طبق' : 'أطباق'} متاحة
               </p>
             </div>
           </div>
+          {dishes.length > 0 && (
+            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 px-2.5 py-1 rounded-full">
+              اضغط + للإضافة
+            </span>
+          )}
         </div>
       </div>
 
@@ -389,7 +392,7 @@ function CookProfile() {
             <p className="text-sm text-stone-500">ستضيف الطباخة أطباقها قريباً</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {dishes.map((dish, idx) => (
               <DishCard
                 key={dish.id}
@@ -493,138 +496,133 @@ function StatPill({ icon: Icon, iconClass, value, label, color }) {
 }
 
 /* ============================================ */
-/* بطاقة طبق */
+/* بطاقة طبق — Premium 2-col design            */
 /* ============================================ */
+const CATEGORY_THEMES = {
+  plat_principal: { emoji: '🍲', from: 'from-orange-900',  via: 'via-amber-800',  to: 'to-orange-700' },
+  patisserie:     { emoji: '🍰', from: 'from-pink-900',    via: 'via-rose-800',   to: 'to-pink-700' },
+  gateau:         { emoji: '🧁', from: 'from-purple-900',  via: 'via-fuchsia-800',to: 'to-purple-700' },
+  entree:         { emoji: '🥗', from: 'from-green-900',   via: 'via-emerald-800',to: 'to-green-700' },
+  boulangerie:    { emoji: '🍞', from: 'from-amber-900',   via: 'via-yellow-800', to: 'to-amber-700' },
+  boisson:        { emoji: '🥤', from: 'from-sky-900',     via: 'via-blue-800',   to: 'to-sky-700' },
+  sauce:          { emoji: '🫙', from: 'from-red-900',     via: 'via-orange-800', to: 'to-red-700' },
+  autre:          { emoji: '🍽️', from: 'from-stone-800',   via: 'via-stone-700',  to: 'to-stone-600' },
+};
+
 function DishCard({ dish, idx, inCartQty, justAdded, onAdd, getDishImage, cookClosed }) {
   const unitLabel = getUnitLabel(dish.unit || 'plate');
   const isLowStock = dish.availableQuantity > 0 && dish.availableQuantity <= 5;
+  const imgSrc = getDishImage(dish);
+  const theme = CATEGORY_THEMES[dish.category] || CATEGORY_THEMES.autre;
 
   return (
     <div
-      style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}
-      className="animate-slide-up bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all group"
+      style={{ animationDelay: `${Math.min(idx * 50, 350)}ms` }}
+      className="animate-slide-up group relative bg-white rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.10)] hover:shadow-[0_8px_30px_rgba(234,88,12,0.20)] transition-all duration-300 flex flex-col cursor-pointer"
     >
-      {/* الصورة */}
-      <div className="relative h-44 overflow-hidden">
-        {getDishImage(dish) ? (
+      {/* ——— صورة الطبق ——— */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '3/4' }}>
+        {imgSrc ? (
           <img
-            src={getDishImage(dish)}
+            src={imgSrc}
             alt={dish.name}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            onError={(e) => { e.target.style.display = 'none'; }}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-orange-100 via-amber-100 to-orange-200 flex items-center justify-center">
-            <span className="text-6xl">🍽️</span>
+          /* Placeholder جميل بالفئة */
+          <div className={`w-full h-full bg-gradient-to-br ${theme.from} ${theme.via} ${theme.to} flex flex-col items-center justify-center gap-2`}>
+            <span className="text-5xl drop-shadow-lg filter">{theme.emoji}</span>
+            <div className="flex gap-1">
+              {[0,1,2].map(i => (
+                <span key={i} className="w-1 h-1 rounded-full bg-white/30" />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* شارات فوق الصورة */}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
-          {dish.readyNow && (
-            <div className="bg-green-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
-              ⚡ متاح فوراً
-            </div>
-          )}
-          {!dish.readyNow && dish.isReadyToday && (
-            <div className="bg-orange-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
-              <Flame className="w-3 h-3" strokeWidth={2.5} />
-              جاهز اليوم
-            </div>
-          )}
-          {isLowStock && (
-            <div className="bg-red-500 text-white px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 shadow-lg">
-              ⏳ باقي {dish.availableQuantity}
-            </div>
-          )}
-        </div>
+        {/* Scrim gradient من أسفل */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/20 to-transparent pointer-events-none" />
 
-        {/* شارة مدة التحضير — أسفل الصورة */}
+        {/* ——— شارة مدة التحضير — ذهبية مميزة ——— */}
         {dish.prepTime > 0 && (
-          <div className="absolute bottom-3 right-3">
-            <div className="flex items-center gap-1 bg-stone-900/75 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-bold shadow-lg">
-              <Clock className="w-3 h-3" strokeWidth={2.5} />
+          <div className="absolute top-2 right-2">
+            <div className="flex items-center gap-1 bg-amber-400 text-stone-900 px-2 py-0.5 rounded-lg text-[10px] font-black shadow-lg shadow-amber-500/40 leading-tight">
+              <Clock className="w-2.5 h-2.5 flex-shrink-0" strokeWidth={2.8} />
               {formatPrepTime(dish.prepTime)}
             </div>
           </div>
         )}
 
-        {/* شارة الكمية في السلة */}
-        {inCartQty > 0 && (
-          <div className="absolute top-3 left-3 bg-green-500 text-white px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1 shadow-lg animate-scale-in">
-            <Check className="w-3 h-3" strokeWidth={3} />
-            {inCartQty} في السلة
-          </div>
-        )}
-      </div>
-
-      {/* محتوى البطاقة */}
-      <div className="p-4">
-        <h3 className="text-lg font-extrabold text-stone-800 leading-tight mb-1">
-          {dish.name}
-        </h3>
-
-        {dish.description && (
-          <p className="text-stone-500 text-xs leading-relaxed line-clamp-2 mb-2">
-            {dish.description}
-          </p>
-        )}
-
-        {/* شارة مدة التحضير */}
-        {dish.prepTime > 0 && (
-          <div className="mb-2">
-            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full text-[11px] font-extrabold">
-              <Clock className="w-3 h-3 text-amber-600" strokeWidth={2.5} />
-              يجهّز في {formatPrepTime(dish.prepTime)}
-            </span>
-          </div>
-        )}
-
-        {/* السعر + زر الإضافة */}
-        <div className="flex items-end justify-between gap-3 pt-2 border-t border-stone-100">
-          <div>
-            <p className="text-[10px] text-stone-500 font-semibold leading-none mb-1">
-              السعر
-            </p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-black text-orange-600 leading-none">
-                {dish.price}
-              </span>
-              <span className="text-xs text-stone-500 font-semibold">
-                دج / {unitLabel}
-              </span>
+        {/* شارة "متاح فوراً" أو "جاهز اليوم" */}
+        {(dish.readyNow || (!dish.readyNow && dish.isReadyToday)) && (
+          <div className="absolute top-2 left-2">
+            <div className={`text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow-lg leading-tight ${dish.readyNow ? 'bg-green-500 shadow-green-500/40' : 'bg-orange-500 shadow-orange-500/40'}`}>
+              {dish.readyNow ? '⚡ فوري' : '🔥 اليوم'}
             </div>
           </div>
+        )}
 
-          <button
-            onClick={onAdd}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all active:scale-90 shadow-lg ${
-              cookClosed
-                ? 'bg-stone-200 text-stone-400 shadow-none cursor-not-allowed'
-                : justAdded
-                ? 'bg-green-500 text-white shadow-green-500/40 scale-95'
-                : inCartQty > 0
-                ? 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30'
-                : 'bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30'
-            }`}
-          >
-            {justAdded ? (
-              <>
-                <Check className="w-4 h-4" strokeWidth={3} />
-                تمت!
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" strokeWidth={3} />
-                {inCartQty > 0 ? `+1 (${inCartQty})` : 'أضف'}
-              </>
+        {/* شارة المخزون المنخفض */}
+        {isLowStock && (
+          <div className="absolute top-8 left-2">
+            <div className="bg-red-500 text-white px-2 py-0.5 rounded-lg text-[10px] font-black shadow-lg leading-tight">
+              {dish.availableQuantity} باقي
+            </div>
+          </div>
+        )}
+
+        {/* ——— اسم الطبق + السعر فوق الصورة (scrim) ——— */}
+        <div className="absolute bottom-0 right-0 left-0 px-2.5 pb-2.5 pt-6">
+          <h3 className="text-white font-extrabold text-xs leading-tight line-clamp-2 drop-shadow mb-1">
+            {dish.name}
+          </h3>
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-orange-300 font-black text-sm leading-none">{dish.price}</span>
+              <span className="text-white/70 text-[10px] font-semibold"> دج/{unitLabel}</span>
+            </div>
+            {/* عداد السلة */}
+            {inCartQty > 0 && (
+              <span className="bg-green-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5 shadow">
+                <Check className="w-2.5 h-2.5" strokeWidth={3} />
+                {inCartQty}
+              </span>
             )}
-          </button>
+          </div>
         </div>
+
+        {/* ——— زر الإضافة الدائري العائم ——— */}
+        <button
+          onClick={onAdd}
+          disabled={cookClosed}
+          aria-label={justAdded ? 'تمت الإضافة' : 'إضافة للسلة'}
+          className={`absolute bottom-2.5 left-2.5 w-9 h-9 rounded-xl flex items-center justify-center shadow-xl transition-all duration-200 active:scale-90 ${
+            cookClosed
+              ? 'bg-stone-400/80 text-stone-200 cursor-not-allowed shadow-none'
+              : justAdded
+              ? 'bg-green-500 text-white shadow-green-500/50 scale-110'
+              : inCartQty > 0
+              ? 'bg-green-500 hover:bg-green-400 text-white shadow-green-500/50'
+              : 'bg-gradient-to-br from-orange-400 to-orange-600 hover:from-orange-300 hover:to-orange-500 text-white shadow-orange-600/50'
+          }`}
+        >
+          {justAdded
+            ? <Check className="w-4 h-4" strokeWidth={3} />
+            : inCartQty > 0
+            ? <span className="text-xs font-black leading-none">+{inCartQty}</span>
+            : <Plus className="w-4 h-4" strokeWidth={3} />
+          }
+        </button>
       </div>
+
+      {/* ——— وصف مختصر (إن وُجد) ——— */}
+      {dish.description && (
+        <div className="px-2.5 pt-2 pb-2.5 flex-1">
+          <p className="text-stone-400 text-[10px] leading-relaxed line-clamp-2">{dish.description}</p>
+        </div>
+      )}
     </div>
   );
 }
