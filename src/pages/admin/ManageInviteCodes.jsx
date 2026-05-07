@@ -77,18 +77,18 @@ const ManageInviteCodes = () => {
   const generateCodes = async () => {
     setGenerating(true);
     try {
-      const existingCodes = codes.map((c) => c.code);
+      const existingCodes = new Set(codes.map((c) => c.code));
       const newCodes = [];
-      let num = codes.length;
+
+      const randomCode = () => {
+        const arr = new Uint8Array(4);
+        crypto.getRandomValues(arr);
+        return `${INVITE_SYSTEM.codePrefix}-${Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase().slice(0, 8)}`;
+      };
 
       for (let i = 0; i < genCount; i++) {
-        num++;
         let code;
-        do {
-          code = `${INVITE_SYSTEM.codePrefix}-${String(num).padStart(3, '0')}`;
-          num++;
-        } while (existingCodes.includes(code) || newCodes.includes(code));
-        num--;
+        do { code = randomCode(); } while (existingCodes.has(code) || newCodes.includes(code));
         newCodes.push(code);
       }
 

@@ -355,7 +355,7 @@ const CookInvite = () => {
             type="text"
             value={code}
             onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(''); setErrorType(''); }}
-            placeholder="NAKHA-XXX"
+            placeholder="أدخلي رمز الدعوة هنا"
             dir="ltr"
             autoCapitalize="characters"
             autoCorrect="off"
