@@ -51,9 +51,22 @@ function App() {
     return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
   }
 
+  const exitBypass = () => {
+    sessionStorage.removeItem('nakha_bypass');
+    setBypassed(false);
+  };
+
   return (
     <AuthProvider>
       <Navbar />
+      {EARLY_ACCESS.enabled && (
+        <button
+          onClick={exitBypass}
+          className="fixed bottom-20 left-4 z-50 bg-black/70 text-orange-400 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm border border-orange-800/50 hover:bg-orange-900/50 transition-colors"
+        >
+          ← Early Access
+        </button>
+      )}
       <Routes>
         {/* الصفحات العامة */}
         <Route path="/" element={<Home />} />
