@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   collection, getDocs, doc, addDoc, updateDoc, deleteDoc,
-  serverTimestamp, query, orderBy, Timestamp,
+  serverTimestamp, Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { INVITE_SYSTEM } from '../../config/settings';
@@ -55,18 +55,20 @@ const ManageInviteCodes = () => {
   const fetchCodes = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, 'invite_codes'), orderBy('created_at', 'desc'));
-      const snap = await getDocs(q);
-      setCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(collection(db, 'invite_codes'));
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+      setCodes(list);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
   const fetchAnalytics = async () => {
     try {
-      const q = query(collection(db, 'invite_analytics'), orderBy('timestamp', 'desc'));
-      const snap = await getDocs(q);
-      setAnalytics(snap.docs.map((d) => d.data()));
+      const snap = await getDocs(collection(db, 'invite_analytics'));
+      const list = snap.docs.map((d) => d.data());
+      list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+      setAnalytics(list);
     } catch (e) { console.error(e); }
   };
 
