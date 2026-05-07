@@ -225,6 +225,79 @@ service cloud.firestore {
 
 
     // ======================================
+    // Collection: waitlist
+    // ======================================
+    match /waitlist/{entryId} {
+      // Public read: duplicate-check query by phone before registration
+      allow read: if true;
+
+      // Public create: unauthenticated visitors register for early access
+      allow create: if request.resource.data.phone is string &&
+        request.resource.data.phone.size() == 10;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: invite_codes
+    // ======================================
+    match /invite_codes/{codeId} {
+      // Public read: CookInvite page validates codes without auth
+      allow read: if true;
+
+      // Only admin can create, update, or delete invite codes
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        // Allow marking code as used during signup (authenticated new cook)
+        isLoggedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['used', 'used_by', 'used_by_name', 'used_by_email', 'used_at']) &&
+        request.resource.data.used == true
+      );
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: invite_tokens
+    // ======================================
+    match /invite_tokens/{tokenId} {
+      // Public read: CookSignup verifies tokens without auth
+      allow read: if true;
+
+      // Public create: CookInvite page generates tokens before auth
+      allow create: if request.resource.data.token is string &&
+        request.resource.data.used == false;
+
+      // Allow marking token as used during signup (authenticated new cook)
+      allow update: if isAdmin() || (
+        isLoggedIn() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['used', 'used_by', 'used_at']) &&
+        request.resource.data.used == true
+      );
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ======================================
+    // Collection: invite_analytics
+    // ======================================
+    match /invite_analytics/{eventId} {
+      // Admin can read analytics
+      allow read: if isAdmin();
+
+      // Public create: analytics events logged from public pages
+      allow create: if request.resource.data.event is string &&
+        request.resource.data.timestamp != null;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ======================================
     // Collection: admin
     // ======================================
     match /admin/{docId} {
