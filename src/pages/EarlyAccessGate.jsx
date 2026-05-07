@@ -1,23 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Phone, ArrowLeft, Check, AlertCircle, Loader2, Users } from 'lucide-react';
+import { Phone, ArrowLeft, Check, AlertCircle, Loader2, ChefHat, ShoppingBag, Truck, Shield, Heart, MapPin, Globe, Mail } from 'lucide-react';
 
 const ADMIN_BYPASS_CODE = 'NAKHA-ADMIN-2026';
-
-const FOODS = [
-  { emoji: '🍲', size: 44, orbit: 130, speed: 25, startAngle: 0 },
-  { emoji: '🍰', size: 36, orbit: 130, speed: 30, startAngle: 72 },
-  { emoji: '👩‍🍳', size: 40, orbit: 130, speed: 28, startAngle: 144 },
-  { emoji: '🥗', size: 34, orbit: 130, speed: 32, startAngle: 216 },
-  { emoji: '🍽️', size: 32, orbit: 130, speed: 26, startAngle: 288 },
-];
 
 export default function EarlyAccessGate({ onBypass }) {
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
-  const [stage, setStage] = useState(0);
+  const [revealed, setRevealed] = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState(0);
 
   const [showBypass, setShowBypass] = useState(false);
   const [bypassCode, setBypassCode] = useState('');
@@ -26,11 +19,11 @@ export default function EarlyAccessGate({ onBypass }) {
   const tapTimer = useRef(null);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setStage(1), 100);
-    const t2 = setTimeout(() => setStage(2), 600);
-    const t3 = setTimeout(() => setStage(3), 1100);
-    const t4 = setTimeout(() => setStage(4), 1600);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+    const t = setTimeout(() => setRevealed(true), 80);
+    getCountFromServer(collection(db, 'waitlist'))
+      .then((snap) => setWaitlistCount(snap.data().count))
+      .catch(() => {});
+    return () => clearTimeout(t);
   }, []);
 
   const handleLogoTap = () => {
@@ -67,633 +60,835 @@ export default function EarlyAccessGate({ onBypass }) {
       if (!existing.empty) { setStatus('duplicate'); return; }
       await addDoc(collection(db, 'waitlist'), { phone, createdAt: serverTimestamp() });
       setStatus('success');
+      setWaitlistCount((c) => c + 1);
     } catch {
       setError('حدث خطأ. تحقق من اتصالك بالإنترنت وحاول مجدداً.');
       setStatus('idle');
     }
   };
 
+  const r = revealed;
+
   return (
-    <div dir="rtl" className="ea-page">
+    <div dir="rtl" className="ea">
       <style>{`
-        @keyframes breathe {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.15); opacity: 0.8; }
-        }
-        @keyframes breathe2 {
-          0%, 100% { transform: scale(1.1); opacity: 0.3; }
-          50% { transform: scale(1.35); opacity: 0.55; }
-        }
-        @keyframes orbit {
-          from { transform: rotate(var(--start)) translateX(var(--radius)) rotate(calc(-1 * var(--start))); }
-          to   { transform: rotate(calc(var(--start) + 360deg)) translateX(var(--radius)) rotate(calc(-1 * (var(--start) + 360deg))); }
-        }
-        @keyframes float-y {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-12px); }
-        }
-        @keyframes float-drift {
-          0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-          10%  { opacity: 0.5; }
-          90%  { opacity: 0.5; }
-          100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
-        }
-        @keyframes shimmer-line {
-          0%   { transform: translateX(100%) scaleX(0); opacity: 0; }
-          30%  { transform: translateX(0) scaleX(1); opacity: 0.3; }
-          70%  { transform: translateX(0) scaleX(1); opacity: 0.3; }
-          100% { transform: translateX(-100%) scaleX(0); opacity: 0; }
-        }
-        @keyframes pulse-ring {
-          0%   { transform: scale(0.8); opacity: 0.6; }
-          100% { transform: scale(2.5); opacity: 0; }
-        }
-        @keyframes reveal-up {
-          from { opacity: 0; transform: translateY(30px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes reveal-scale {
-          from { opacity: 0; transform: scale(0.85); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-        @keyframes counter-spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(-360deg); }
-        }
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0); }
-          50% { opacity: 1; transform: scale(1); }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@200;300;400;500;600;700&display=swap');
 
-        .ea-page {
+        .ea {
+          --bg: #0c0906;
+          --bg-card: rgba(255,245,230,0.025);
+          --accent: #ea580c;
+          --accent-glow: rgba(234,88,12,0.15);
+          --amber: #f59e0b;
+          --text: #faf3eb;
+          --text-mid: #c4b5a3;
+          --text-muted: #8a7b6b;
+          --border: rgba(255,245,230,0.06);
+
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          background: var(--bg);
+          color: var(--text);
           min-height: 100dvh;
-          background: #0f0a04;
-          display: flex;
-          flex-direction: column;
+          overflow-x: hidden;
           position: relative;
-          overflow: hidden;
         }
 
-        /* ── Ambient background ── */
-        .ea-bg-mesh {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .ea-bg-mesh::before {
+        /* ── Ambient ── */
+        .ea::before {
           content: '';
-          position: absolute;
-          top: 8%;
+          position: fixed;
+          top: -20%;
           left: 50%;
           transform: translateX(-50%);
-          width: 600px;
-          height: 600px;
+          width: 800px;
+          height: 800px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(234,88,12,0.18) 0%, rgba(234,88,12,0.04) 50%, transparent 70%);
-          animation: breathe 6s ease-in-out infinite;
-        }
-        .ea-bg-mesh::after {
-          content: '';
-          position: absolute;
-          top: 5%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 400px;
-          height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(251,146,60,0.15) 0%, transparent 60%);
-          animation: breathe2 8s ease-in-out infinite;
-        }
-
-        /* ── Decorative shimmer lines ── */
-        .ea-shimmer-line {
-          position: absolute;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(251,146,60,0.3), transparent);
+          background: radial-gradient(circle, rgba(234,88,12,0.08) 0%, rgba(234,88,12,0.02) 40%, transparent 70%);
           pointer-events: none;
-          z-index: 1;
+          animation: ambient-pulse 8s ease-in-out infinite;
         }
 
-        /* ── Sparkle dots ── */
-        .ea-sparkle {
-          position: absolute;
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: rgba(251,146,60,0.6);
-          animation: sparkle var(--dur) ease-in-out infinite;
+        @keyframes ambient-pulse {
+          0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+          50% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+        }
+
+        /* ── Floating particles ── */
+        @keyframes float-particle {
+          0% { transform: translate(0, 0) scale(1); opacity: 0; }
+          15% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translate(var(--dx), var(--dy)) scale(var(--end-scale)); opacity: 0; }
+        }
+        .ea-particle {
+          position: fixed;
+          font-size: var(--size);
+          animation: float-particle var(--dur) ease-in-out infinite;
           animation-delay: var(--delay);
           pointer-events: none;
           z-index: 1;
+          opacity: 0;
+          filter: blur(0.5px);
         }
 
-        /* ── Hero section ── */
-        .ea-hero {
+        /* ── Section wrapper ── */
+        .ea-section {
           position: relative;
           z-index: 2;
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 3rem 1.5rem 1rem;
-          min-height: 52dvh;
+          max-width: 480px;
+          margin: 0 auto;
+          padding: 0 1.25rem;
         }
 
-        /* ── Logo area ── */
-        .ea-logo-zone {
-          position: relative;
-          width: 280px;
-          height: 280px;
+        /* ── Reveal animations ── */
+        .ea-reveal {
+          opacity: 0;
+          transform: translateY(24px);
+          transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+        }
+        .ea-reveal.on { opacity: 1; transform: translateY(0); }
+        .ea-reveal-scale {
+          opacity: 0;
+          transform: scale(0.92);
+          transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+        }
+        .ea-reveal-scale.on { opacity: 1; transform: scale(1); }
+
+        /* ── Hero ── */
+        .ea-hero {
+          padding-top: max(env(safe-area-inset-top, 0px), 2rem);
+          padding-bottom: 0.5rem;
+          text-align: center;
+        }
+        .ea-logo-row {
           display: flex;
           align-items: center;
           justify-content: center;
+          gap: 0.75rem;
+          margin-bottom: 1.25rem;
           cursor: default;
           user-select: none;
         }
-
-        /* Pulse rings */
-        .ea-pulse-ring {
-          position: absolute;
-          inset: 20%;
-          border-radius: 50%;
-          border: 1px solid rgba(234,88,12,0.25);
-          animation: pulse-ring 3s ease-out infinite;
-        }
-
-        /* Orange glow disc behind logo */
-        .ea-glow-disc {
-          position: absolute;
-          width: 160px;
-          height: 160px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(234,88,12,0.35) 0%, rgba(234,88,12,0.08) 60%, transparent 80%);
-          animation: breathe 4s ease-in-out infinite;
-        }
-
         .ea-logo-img {
-          position: relative;
-          z-index: 3;
-          width: 180px;
+          width: 110px;
           height: auto;
-          filter: drop-shadow(0 0 40px rgba(234,88,12,0.4)) drop-shadow(0 0 80px rgba(234,88,12,0.15));
-          opacity: 0;
-          transform: scale(0.7);
-          transition: opacity 1s cubic-bezier(0.22,1,0.36,1), transform 1s cubic-bezier(0.22,1,0.36,1);
+          filter: drop-shadow(0 0 30px rgba(234,88,12,0.25));
         }
-        .ea-logo-img.s1 { opacity: 1; transform: scale(1); }
-
-        /* ── Food orbit ── */
-        .ea-food-orbit {
-          position: absolute;
-          inset: 0;
-          z-index: 2;
-        }
-        .ea-food-item {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          margin-top: calc(var(--size) / -2);
-          margin-left: calc(var(--size) / -2);
-          width: var(--size);
-          height: var(--size);
-          animation: orbit var(--speed) linear infinite;
-          opacity: 0;
-          transition: opacity 0.8s ease;
-        }
-        .ea-food-item.s2 { opacity: 1; }
-        .ea-food-inner {
-          font-size: calc(var(--size) * 0.65);
-          line-height: 1;
-          animation: float-y 3s ease-in-out infinite;
-          animation-delay: var(--float-delay);
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        }
-
-        /* ── Orbit ring (decorative) ── */
-        .ea-orbit-ring {
-          position: absolute;
-          inset: 15%;
+        .ea-live-dot {
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
-          border: 1px dashed rgba(251,146,60,0.08);
-          animation: counter-spin 60s linear infinite;
-          pointer-events: none;
+          background: var(--accent);
+          box-shadow: 0 0 12px var(--accent), 0 0 4px var(--accent);
+          animation: dot-pulse 2.5s ease-in-out infinite;
         }
-
-        /* ── Tagline ── */
-        .ea-tagline {
-          margin-top: -0.5rem;
-          color: rgba(255,255,255,0.6);
-          font-size: 0.85rem;
-          font-weight: 700;
-          text-align: center;
-          letter-spacing: 0.06em;
-          opacity: 0;
-          transform: translateY(15px);
-          transition: all 0.7s ease;
+        @keyframes dot-pulse {
+          0%, 100% { opacity: 0.6; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.15); }
         }
-        .ea-tagline.s2 { opacity: 1; transform: translateY(0); }
-
-        /* ── Bottom section ── */
-        .ea-bottom {
-          position: relative;
-          z-index: 3;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 0.5rem 1.25rem 1rem;
-        }
-
-        /* ── Badge ── */
-        .ea-badge {
+        .ea-soon-tag {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 8px 20px;
-          border-radius: 100px;
-          background: rgba(234,88,12,0.08);
-          border: 1px solid rgba(234,88,12,0.15);
-          margin-bottom: 1rem;
-          opacity: 0;
-          animation: reveal-up 0.6s ease forwards;
-          animation-delay: 1.2s;
-        }
-        .ea-badge-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: #ea580c;
-          box-shadow: 0 0 8px rgba(234,88,12,0.6);
-          animation: breathe 2s ease-in-out infinite;
-        }
-        .ea-badge-text {
-          font-size: 11px;
-          font-weight: 800;
-          color: #ea580c;
-        }
-
-        /* ── Description ── */
-        .ea-desc {
-          color: rgba(255,255,255,0.35);
-          font-size: 0.8rem;
+          gap: 6px;
+          font-size: 0.65rem;
           font-weight: 600;
-          text-align: center;
-          line-height: 1.9;
-          max-width: 260px;
-          margin: 0 auto 1.5rem;
-          opacity: 0;
-          animation: reveal-up 0.6s ease forwards;
-          animation-delay: 1.4s;
+          letter-spacing: 0.12em;
+          color: var(--accent);
+          text-transform: uppercase;
+        }
+        .ea-headline {
+          font-size: clamp(1.75rem, 7vw, 2.5rem);
+          font-weight: 700;
+          line-height: 1.3;
+          margin-bottom: 0.65rem;
+          color: var(--text);
+        }
+        .ea-headline em {
+          font-style: normal;
+          color: var(--accent);
+          text-shadow: 0 0 30px rgba(234,88,12,0.3);
+        }
+        .ea-subline {
+          font-size: 0.88rem;
+          font-weight: 400;
+          color: var(--text-mid);
+          line-height: 1.7;
+          max-width: 320px;
+          margin: 0 auto;
         }
 
         /* ── Form ── */
+        .ea-form-wrap {
+          margin-top: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
         .ea-form {
-          width: 100%;
-          max-width: 380px;
-          background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-          border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 28px;
-          padding: 1.75rem 1.5rem;
-          backdrop-filter: blur(24px);
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 1.25rem;
           position: relative;
           overflow: hidden;
-          opacity: 0;
-          animation: reveal-up 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
-          animation-delay: 1.6s;
         }
         .ea-form::before {
           content: '';
           position: absolute;
-          top: 0; left: 0; right: 0;
+          top: 0; left: 15%; right: 15%;
           height: 1px;
-          background: linear-gradient(90deg, transparent 10%, rgba(234,88,12,0.3) 50%, transparent 90%);
+          background: linear-gradient(90deg, transparent, rgba(234,88,12,0.25), transparent);
         }
-
-        .ea-label {
+        .ea-input-row {
           display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          color: rgba(255,255,255,0.35);
-          margin-bottom: 10px;
-        }
-
-        .ea-input-wrap {
-          position: relative;
+          gap: 0.5rem;
+          align-items: stretch;
         }
         .ea-input {
-          width: 100%;
-          padding: 16px;
-          background: rgba(255,255,255,0.05);
-          border: 1.5px solid rgba(255,255,255,0.07);
-          border-radius: 16px;
-          font-size: 17px;
-          font-weight: 700;
-          color: #fff;
-          text-align: center;
-          letter-spacing: 0.22em;
-          font-family: 'Cairo', sans-serif;
-          outline: none;
+          flex: 1;
+          padding: 0.85rem 1rem;
+          background: rgba(255,245,230,0.04);
+          border: 1.5px solid var(--border);
+          border-radius: 14px;
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          font-size: 0.95rem;
+          font-weight: 500;
+          color: var(--text);
           direction: ltr;
-          transition: all 0.3s;
-          caret-color: #ea580c;
-        }
-        .ea-input::placeholder { color: rgba(255,255,255,0.15); font-weight: 400; letter-spacing: 0.15em; }
-        .ea-input:focus {
-          border-color: rgba(234,88,12,0.5);
-          background: rgba(234,88,12,0.05);
-          box-shadow: 0 0 0 4px rgba(234,88,12,0.08), 0 0 30px rgba(234,88,12,0.06);
-        }
-
-        .ea-hint {
-          font-size: 10px;
-          color: rgba(255,255,255,0.18);
           text-align: center;
-          margin-top: 8px;
+          letter-spacing: 0.15em;
+          outline: none;
+          transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+          caret-color: var(--accent);
         }
-
-        .ea-submit {
-          width: 100%;
-          margin-top: 16px;
-          padding: 15px;
+        .ea-input::placeholder {
+          color: var(--text-muted);
+          font-weight: 300;
+          letter-spacing: 0.1em;
+        }
+        .ea-input:focus {
+          border-color: rgba(234,88,12,0.4);
+          background: rgba(234,88,12,0.03);
+          box-shadow: 0 0 0 3px rgba(234,88,12,0.06);
+        }
+        .ea-submit-btn {
+          padding: 0.85rem 1.25rem;
+          background: var(--accent);
           border: none;
-          border-radius: 16px;
-          font-family: 'Cairo', sans-serif;
-          font-size: 14px;
-          font-weight: 800;
+          border-radius: 14px;
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          font-size: 0.85rem;
+          font-weight: 600;
           color: #fff;
           cursor: pointer;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
-          box-shadow: 0 8px 32px rgba(234,88,12,0.3), 0 2px 8px rgba(234,88,12,0.2), inset 0 1px 0 rgba(255,255,255,0.15);
-          transition: all 0.25s;
+          gap: 6px;
+          white-space: nowrap;
+          transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+          box-shadow: 0 4px 20px rgba(234,88,12,0.3);
           position: relative;
           overflow: hidden;
         }
-        .ea-submit::after {
+        .ea-submit-btn::after {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-          transform: translateX(-100%);
-          transition: transform 0.5s;
+          background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+          transform: translateX(-150%);
+          transition: transform 0.6s ease;
         }
-        .ea-submit:hover:not(:disabled)::after { transform: translateX(100%); }
-        .ea-submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 40px rgba(234,88,12,0.4), 0 4px 12px rgba(234,88,12,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+        .ea-submit-btn:hover:not(:disabled)::after { transform: translateX(150%); }
+        .ea-submit-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 28px rgba(234,88,12,0.4);
         }
-        .ea-submit:active:not(:disabled) { transform: scale(0.97) translateY(0); }
-        .ea-submit:disabled { opacity: 0.35; cursor: default; }
-
-        .ea-error {
-          display: flex; align-items: flex-start; gap: 8px;
-          background: rgba(220,38,38,0.08);
-          border: 1px solid rgba(220,38,38,0.15);
-          border-radius: 14px;
-          padding: 10px 12px;
-          margin-top: 12px;
+        .ea-submit-btn:active:not(:disabled) { transform: scale(0.97); }
+        .ea-submit-btn:disabled { opacity: 0.4; cursor: default; }
+        .ea-form-hint {
+          font-size: 0.65rem;
+          color: var(--text-muted);
+          text-align: center;
+          margin-top: 0.6rem;
         }
-        .ea-error-text { font-size: 11px; font-weight: 700; color: #fca5a5; }
+        .ea-error-box {
+          display: flex;
+          align-items: flex-start;
+          gap: 6px;
+          background: rgba(220,38,38,0.06);
+          border: 1px solid rgba(220,38,38,0.12);
+          border-radius: 12px;
+          padding: 0.6rem 0.75rem;
+          margin-top: 0.6rem;
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: #fca5a5;
+        }
 
         /* ── Success ── */
-        .ea-success {
-          width: 100%;
-          max-width: 380px;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(74,222,128,0.12);
-          border-radius: 28px;
-          padding: 2rem 1.5rem;
+        .ea-success-card {
+          background: var(--bg-card);
+          border: 1px solid rgba(74,222,128,0.1);
+          border-radius: 20px;
+          padding: 1.75rem 1.25rem;
           text-align: center;
-          backdrop-filter: blur(20px);
-          animation: reveal-scale 0.5s ease forwards;
+          animation: pop-in 0.5s cubic-bezier(0.16,1,0.3,1);
         }
-        .ea-success-icon {
-          width: 60px; height: 60px;
+        @keyframes pop-in {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .ea-success-check {
+          width: 48px; height: 48px;
           border-radius: 50%;
-          background: rgba(74,222,128,0.1);
+          background: rgba(74,222,128,0.08);
           display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 1rem;
-          box-shadow: 0 0 30px rgba(74,222,128,0.1);
+          margin: 0 auto 0.75rem;
         }
-        .ea-success h3 { font-size: 1.1rem; font-weight: 900; color: #fff; margin-bottom: 0.5rem; }
-        .ea-success p { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.35); line-height: 1.8; }
-        .ea-success-badge {
-          display: flex; align-items: center; justify-content: center; gap: 6px;
-          margin-top: 1.25rem;
-          font-size: 11px; font-weight: 700; color: #ea580c;
+        .ea-success-card h3 {
+          font-size: 1rem;
+          font-weight: 700;
+          margin-bottom: 0.35rem;
+        }
+        .ea-success-card p {
+          font-size: 0.78rem;
+          color: var(--text-mid);
+          line-height: 1.7;
+        }
+
+        /* ── Divider ── */
+        .ea-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, var(--border), transparent);
+          margin: 0.75rem 0;
+        }
+
+        /* ── Social proof ── */
+        .ea-proof {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+          padding: 1.25rem 0;
+        }
+        .ea-proof-item {
+          text-align: center;
+          padding: 0.75rem 0.25rem;
+          border-radius: 16px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+        }
+        .ea-proof-num {
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: var(--accent);
+          display: block;
+          line-height: 1.2;
+        }
+        .ea-proof-label {
+          font-size: 0.6rem;
+          font-weight: 500;
+          color: var(--text-muted);
+          margin-top: 0.2rem;
+          display: block;
+        }
+
+        /* ── How it works ── */
+        .ea-how {
+          padding: 2rem 0 1.5rem;
+        }
+        .ea-section-title {
+          font-size: 0.65rem;
+          font-weight: 600;
+          letter-spacing: 0.15em;
+          color: var(--accent);
+          text-align: center;
+          margin-bottom: 1.25rem;
+        }
+        .ea-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .ea-step {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+          padding: 1rem;
+          border-radius: 16px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          transition: border-color 0.3s, background 0.3s;
+        }
+        .ea-step:hover {
+          border-color: rgba(234,88,12,0.12);
+          background: rgba(234,88,12,0.02);
+        }
+        .ea-step-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: rgba(234,88,12,0.06);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          color: var(--accent);
+        }
+        .ea-step-num {
+          font-size: 0.55rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          letter-spacing: 0.05em;
+          margin-bottom: 0.1rem;
+        }
+        .ea-step-text {
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--text);
+          line-height: 1.4;
+        }
+
+        /* ── Trust ── */
+        .ea-trust {
+          padding: 1rem 0 1.5rem;
+        }
+        .ea-trust-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+        }
+        .ea-trust-card {
+          padding: 1rem 0.75rem;
+          border-radius: 16px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          text-align: center;
+        }
+        .ea-trust-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 0.5rem;
+        }
+        .ea-trust-label {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--text-mid);
+          display: block;
+          line-height: 1.5;
+        }
+
+        /* ── Early access perks ── */
+        .ea-perks {
+          padding: 1rem 0 2rem;
+        }
+        .ea-perk-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+        .ea-perk {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.85rem 1rem;
+          border-radius: 14px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+        }
+        .ea-perk-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--accent);
+          box-shadow: 0 0 8px rgba(234,88,12,0.4);
+          flex-shrink: 0;
+        }
+        .ea-perk-text {
+          font-size: 0.78rem;
+          font-weight: 500;
+          color: var(--text-mid);
         }
 
         /* ── Footer ── */
         .ea-footer {
-          position: relative; z-index: 2;
+          position: relative;
+          z-index: 2;
+          border-top: 1px solid var(--border);
+          padding: 1.5rem 1.25rem;
           text-align: center;
-          padding: 1rem;
-          font-size: 10px; font-weight: 600;
-          color: rgba(255,255,255,0.1);
+        }
+        .ea-footer-brand {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-muted);
+          margin-bottom: 0.75rem;
+        }
+        .ea-footer-links {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 1.5rem;
+          margin-bottom: 0.75rem;
+        }
+        .ea-footer-link {
+          font-size: 0.65rem;
+          font-weight: 500;
+          color: var(--text-muted);
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .ea-footer-link:hover { color: var(--text-mid); }
+        .ea-footer-social {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          margin-bottom: 0.75rem;
+        }
+        .ea-footer-social a {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          transition: all 0.2s;
+        }
+        .ea-footer-social a:hover {
+          color: var(--accent);
+          border-color: rgba(234,88,12,0.15);
+        }
+        .ea-footer-made {
+          font-size: 0.6rem;
+          color: rgba(138,123,107,0.5);
+          letter-spacing: 0.05em;
         }
 
-        /* ── Bypass ── */
+        /* ── Bypass modal ── */
         .ea-bypass-overlay {
           position: fixed; inset: 0; z-index: 50;
           display: flex; align-items: center; justify-content: center;
-          background: rgba(0,0,0,0.8);
+          background: rgba(0,0,0,0.85);
           backdrop-filter: blur(12px);
           padding: 1rem;
-          animation: reveal-scale 0.25s ease;
+          animation: pop-in 0.25s ease;
         }
         .ea-bypass-card {
-          background: #1a1008;
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 24px;
-          padding: 1.75rem 1.5rem;
-          max-width: 320px; width: 100%;
-          box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+          background: #1a1208;
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 1.5rem 1.25rem;
+          max-width: 300px;
+          width: 100%;
         }
-        .ea-bypass-title { font-size: 13px; font-weight: 900; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 14px; }
+        .ea-bypass-title {
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          text-align: center;
+          margin-bottom: 1rem;
+        }
         .ea-bypass-input {
-          width: 100%; padding: 12px 14px;
-          background: rgba(255,255,255,0.05);
-          border: 1.5px solid rgba(255,255,255,0.08);
-          border-radius: 14px;
-          font-size: 13px; font-family: monospace; color: #fff;
-          text-align: center; outline: none;
-          transition: border-color 0.2s; direction: ltr; margin-bottom: 12px;
+          width: 100%;
+          padding: 0.7rem;
+          background: rgba(255,245,230,0.04);
+          border: 1.5px solid var(--border);
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-family: monospace;
+          color: var(--text);
+          text-align: center;
+          outline: none;
+          direction: ltr;
+          margin-bottom: 0.75rem;
+          transition: border-color 0.2s;
         }
-        .ea-bypass-input:focus { border-color: #ea580c; }
+        .ea-bypass-input:focus { border-color: var(--accent); }
         .ea-bypass-btn {
-          width: 100%; padding: 11px;
-          background: rgba(234,88,12,0.15);
-          border: 1px solid rgba(234,88,12,0.2);
-          border-radius: 14px;
-          font-family: 'Cairo', sans-serif;
-          font-size: 13px; font-weight: 700;
-          color: #ea580c; cursor: pointer;
-          transition: all 0.2s;
+          width: 100%;
+          padding: 0.65rem;
+          background: rgba(234,88,12,0.1);
+          border: 1px solid rgba(234,88,12,0.15);
+          border-radius: 12px;
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--accent);
+          cursor: pointer;
+          transition: background 0.2s;
         }
-        .ea-bypass-btn:hover { background: rgba(234,88,12,0.25); }
-        .ea-bypass-error { font-size: 11px; color: #fca5a5; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        .ea-bypass-btn:hover { background: rgba(234,88,12,0.18); }
+        .ea-bypass-error {
+          font-size: 0.7rem;
+          color: #fca5a5;
+          font-weight: 600;
+          text-align: center;
+          margin-bottom: 0.5rem;
+        }
 
-        @media (min-width: 768px) {
-          .ea-hero { min-height: 55dvh; }
-          .ea-logo-zone { width: 340px; height: 340px; }
-          .ea-logo-img { width: 220px; }
-          .ea-food-item { --size: 50px; }
+        @media (min-width: 640px) {
+          .ea-section { max-width: 520px; }
+          .ea-headline { font-size: 2.5rem; }
+          .ea-trust-grid { grid-template-columns: repeat(4, 1fr); }
         }
       `}</style>
 
-      {/* ═══ Ambient background ═══ */}
-      <div className="ea-bg-mesh" />
-
-      {/* ═══ Shimmer lines ═══ */}
+      {/* Floating food particles */}
       {[
-        { top: '15%', width: '40%', left: '5%', dur: '6s', delay: '0s' },
-        { top: '35%', width: '30%', left: '60%', dur: '8s', delay: '2s' },
-        { top: '65%', width: '35%', left: '10%', dur: '7s', delay: '4s' },
-        { top: '80%', width: '25%', left: '55%', dur: '9s', delay: '1s' },
-      ].map((l, i) => (
+        { emoji: '🍲', top: '8%',  left: '8%',  size: '1.4rem', dx: '30px', dy: '-60px', dur: '12s', delay: '0s', scale: 0.6 },
+        { emoji: '🫓', top: '15%', left: '85%', size: '1.1rem', dx: '-20px', dy: '-40px', dur: '15s', delay: '3s', scale: 0.5 },
+        { emoji: '🍰', top: '35%', left: '5%',  size: '1.2rem', dx: '25px', dy: '-50px', dur: '14s', delay: '6s', scale: 0.7 },
+        { emoji: '🥘', top: '50%', left: '90%', size: '1.3rem', dx: '-35px', dy: '-45px', dur: '13s', delay: '2s', scale: 0.5 },
+        { emoji: '🍵', top: '70%', left: '10%', size: '1rem',   dx: '20px', dy: '-55px', dur: '16s', delay: '8s', scale: 0.6 },
+        { emoji: '🥗', top: '80%', left: '80%', size: '1.1rem', dx: '-15px', dy: '-35px', dur: '11s', delay: '5s', scale: 0.7 },
+      ].map((p, i) => (
         <div
           key={i}
-          className="ea-shimmer-line"
-          style={{ top: l.top, width: l.width, left: l.left, animation: `shimmer-line ${l.dur} ease-in-out infinite`, animationDelay: l.delay }}
-        />
-      ))}
-
-      {/* ═══ Sparkle dots ═══ */}
-      {[
-        { top: '10%', left: '20%', dur: '3s', delay: '0s' },
-        { top: '22%', left: '75%', dur: '4s', delay: '1.5s' },
-        { top: '45%', left: '12%', dur: '3.5s', delay: '0.8s' },
-        { top: '55%', left: '85%', dur: '4.5s', delay: '2.2s' },
-        { top: '72%', left: '30%', dur: '3s', delay: '1s' },
-        { top: '85%', left: '65%', dur: '4s', delay: '0.5s' },
-        { top: '30%', left: '50%', dur: '5s', delay: '3s' },
-        { top: '60%', left: '40%', dur: '3.5s', delay: '1.8s' },
-      ].map((s, i) => (
-        <div key={i} className="ea-sparkle" style={{ top: s.top, left: s.left, '--dur': s.dur, '--delay': s.delay }} />
+          className="ea-particle"
+          style={{
+            top: p.top, left: p.left,
+            '--size': p.size, fontSize: p.size,
+            '--dx': p.dx, '--dy': p.dy, '--dur': p.dur, '--delay': p.delay,
+            '--end-scale': p.scale,
+            animationDuration: p.dur, animationDelay: p.delay,
+          }}
+        >{p.emoji}</div>
       ))}
 
       {/* ═══ Hero ═══ */}
-      <div className="ea-hero">
-        <div className="ea-logo-zone" onClick={handleLogoTap}>
-          {/* Decorative orbit ring */}
-          <div className="ea-orbit-ring" />
+      <div className="ea-section ea-hero">
+        <div
+          className={`ea-reveal-scale ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.1s' }}
+        >
+          <div className="ea-logo-row" onClick={handleLogoTap}>
+            <img src="/nakha-logo.png" alt="نَكهة" className="ea-logo-img" draggable={false} />
+          </div>
+          <div className="ea-soon-tag" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
+            <span className="ea-live-dot" />
+            <span>قريباً في بشار</span>
+          </div>
+        </div>
 
-          {/* Pulse rings */}
-          <div className="ea-pulse-ring" style={{ animationDelay: '0s' }} />
-          <div className="ea-pulse-ring" style={{ animationDelay: '1s' }} />
-          <div className="ea-pulse-ring" style={{ animationDelay: '2s' }} />
+        <h1
+          className={`ea-headline ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.25s' }}
+        >
+          أكل بيت <em>حقيقي</em>
+          <br />
+          من بشار لبابك
+        </h1>
 
-          {/* Glow */}
-          <div className="ea-glow-disc" />
+        <p
+          className={`ea-subline ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.4s' }}
+        >
+          منصة تربط طباخات بشار الموثوقات بالزبائن.
+          <br />
+          أطباق منزلية طازجة توصلك لبابك.
+        </p>
 
-          {/* Orbiting food */}
-          <div className="ea-food-orbit">
-            {FOODS.map((f, i) => (
-              <div
-                key={i}
-                className={`ea-food-item ${stage >= 2 ? 's2' : ''}`}
-                style={{
-                  '--size': `${f.size}px`,
-                  '--radius': `${f.orbit}px`,
-                  '--start': `${f.startAngle}deg`,
-                  '--speed': `${f.speed}s`,
-                  animation: `orbit ${f.speed}s linear infinite`,
-                  transitionDelay: `${i * 0.12}s`,
-                }}
-              >
-                <div className="ea-food-inner" style={{ '--float-delay': `${i * 0.4}s` }}>
-                  {f.emoji}
+        {/* ── Form ── */}
+        <div
+          className={`ea-form-wrap ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.55s' }}
+        >
+          {status === 'success' || status === 'duplicate' ? (
+            <div className="ea-success-card">
+              <div className="ea-success-check">
+                <Check className="w-6 h-6 text-green-400" strokeWidth={2.5} />
+              </div>
+              <h3>{status === 'duplicate' ? 'أنت مسجّل بالفعل!' : 'تم تسجيلك بنجاح!'}</h3>
+              <p>{status === 'duplicate'
+                ? 'رقمك في قائمة الانتظار. سنُبلغك فور الإطلاق.'
+                : 'سنتواصل معك فور إطلاق المنصة.'}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="ea-form">
+              <div className="ea-input-row">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    if (val.length <= 10) { setPhone(val); setError(''); }
+                  }}
+                  placeholder="05XXXXXXXX"
+                  className="ea-input"
+                />
+                <button
+                  type="submit"
+                  disabled={!phone.trim() || status === 'loading'}
+                  className="ea-submit-btn"
+                >
+                  {status === 'loading' ? (
+                    <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />
+                  ) : (
+                    <><ArrowLeft className="w-4 h-4" strokeWidth={2.5} />سجّل</>
+                  )}
+                </button>
+              </div>
+              <p className="ea-form-hint">سجّل رقمك لنُبلغك فور الإطلاق — 10 أرقام</p>
+              {error && (
+                <div className="ea-error-box">
+                  <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={2.4} />
+                  <span>{error}</span>
                 </div>
+              )}
+            </form>
+          )}
+        </div>
+      </div>
+
+      {/* ═══ Social proof ═══ */}
+      <div className="ea-section">
+        <div
+          className={`ea-proof ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.7s' }}
+        >
+          <div className="ea-proof-item">
+            <span className="ea-proof-num">{waitlistCount > 0 ? `+${waitlistCount}` : '—'}</span>
+            <span className="ea-proof-label">في قائمة الانتظار</span>
+          </div>
+          <div className="ea-proof-item">
+            <span className="ea-proof-num">بشار</span>
+            <span className="ea-proof-label">أول مدينة إطلاق</span>
+          </div>
+          <div className="ea-proof-item">
+            <span className="ea-proof-num">15</span>
+            <span className="ea-proof-label">طباخة مؤسّسة</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="ea-section"><div className="ea-divider" /></div>
+
+      {/* ═══ Early access perks ═══ */}
+      <div className="ea-section">
+        <div
+          className={`ea-perks ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.85s' }}
+        >
+          <p className="ea-section-title">لماذا تسجّل الآن؟</p>
+          <div className="ea-perk-list">
+            {[
+              'أولوية الوصول عند إطلاق المنصة',
+              'دعوات حصرية للمرحلة التجريبية',
+              'كن من أوائل المستخدمين في بشار',
+            ].map((text, i) => (
+              <div className="ea-perk" key={i}>
+                <div className="ea-perk-dot" />
+                <span className="ea-perk-text">{text}</span>
               </div>
             ))}
           </div>
-
-          {/* Logo */}
-          <img
-            src="/nakha-logo.png"
-            alt="نَكهة"
-            className={`ea-logo-img ${stage >= 1 ? 's1' : ''}`}
-            draggable={false}
-          />
         </div>
-
-        <p className={`ea-tagline ${stage >= 2 ? 's2' : ''}`}>
-          أكل بيت حقيقي — من بشار لبابك
-        </p>
       </div>
 
-      {/* ═══ Bottom ═══ */}
-      <div className="ea-bottom">
-        <div className="ea-badge">
-          <div className="ea-badge-dot" />
-          <span className="ea-badge-text">قريباً — سجّل مكانك</span>
-        </div>
+      <div className="ea-section"><div className="ea-divider" /></div>
 
-        <p className="ea-desc">
-          منصة نَكهة تربط طباخات بشار بالزبائن.
-          <br />
-          سجّل رقمك لنُبلغك فور الإطلاق.
-        </p>
-
-        {status === 'success' || status === 'duplicate' ? (
-          <div className="ea-success">
-            <div className="ea-success-icon">
-              <Check className="w-7 h-7 text-green-400" strokeWidth={2.5} />
+      {/* ═══ How it works ═══ */}
+      <div className="ea-section">
+        <div
+          className={`ea-how ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '1s' }}
+        >
+          <p className="ea-section-title">كيف تعمل نَكهة؟</p>
+          <div className="ea-steps">
+            <div className="ea-step">
+              <div className="ea-step-icon">
+                <ChefHat className="w-5 h-5" strokeWidth={2} />
+              </div>
+              <div>
+                <p className="ea-step-num">الخطوة الأولى</p>
+                <p className="ea-step-text">اكتشف طباخات بشار الموثوقات</p>
+              </div>
             </div>
-            <h3>{status === 'duplicate' ? 'أنت مسجّل بالفعل!' : 'تم تسجيلك بنجاح!'}</h3>
-            <p>{status === 'duplicate' ? 'رقمك في قائمة الانتظار. سنُبلغك فور الإطلاق.' : 'سنتواصل معك عبر هذا الرقم فور إطلاق المنصة.'}</p>
-            <div className="ea-success-badge">
-              <Users className="w-3.5 h-3.5" strokeWidth={2.4} />
-              أنت من أوائل المسجّلين
+            <div className="ea-step">
+              <div className="ea-step-icon">
+                <ShoppingBag className="w-5 h-5" strokeWidth={2} />
+              </div>
+              <div>
+                <p className="ea-step-num">الخطوة الثانية</p>
+                <p className="ea-step-text">اطلب أطباق منزلية أصيلة</p>
+              </div>
+            </div>
+            <div className="ea-step">
+              <div className="ea-step-icon">
+                <Truck className="w-5 h-5" strokeWidth={2} />
+              </div>
+              <div>
+                <p className="ea-step-num">الخطوة الثالثة</p>
+                <p className="ea-step-text">استلمها طازجة على بابك</p>
+              </div>
             </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="ea-form">
-            <label className="ea-label">
-              <Phone className="w-3.5 h-3.5 text-orange-500" strokeWidth={2.3} />
-              رقم هاتفك
-            </label>
-            <div className="ea-input-wrap">
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                value={phone}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  if (val.length <= 10) { setPhone(val); setError(''); }
-                }}
-                placeholder="05XXXXXXXX"
-                className="ea-input"
-              />
-            </div>
-            <p className="ea-hint">10 أرقام — يبدأ بـ 05 أو 06 أو 07</p>
-
-            {error && (
-              <div className="ea-error">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={2.4} />
-                <p className="ea-error-text">{error}</p>
-              </div>
-            )}
-
-            <button type="submit" disabled={!phone.trim() || status === 'loading'} className="ea-submit">
-              {status === 'loading' ? (
-                <><Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />جارٍ التسجيل...</>
-              ) : (
-                <><ArrowLeft className="w-5 h-5" strokeWidth={2.5} />سجّل في قائمة الانتظار</>
-              )}
-            </button>
-          </form>
-        )}
+        </div>
       </div>
 
-      <footer className="ea-footer">نَكهة — منصة الأكل المنزلي في بشار 🇩🇿</footer>
+      <div className="ea-section"><div className="ea-divider" /></div>
+
+      {/* ═══ Trust ═══ */}
+      <div className="ea-section">
+        <div
+          className={`ea-trust ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '1.15s' }}
+        >
+          <p className="ea-section-title">لماذا نَكهة؟</p>
+          <div className="ea-trust-grid">
+            <div className="ea-trust-card">
+              <div className="ea-trust-icon" style={{ background: 'rgba(234,88,12,0.06)', color: 'var(--accent)' }}>
+                <ChefHat className="w-4 h-4" strokeWidth={2} />
+              </div>
+              <span className="ea-trust-label">طباخات حقيقيات من بشار</span>
+            </div>
+            <div className="ea-trust-card">
+              <div className="ea-trust-icon" style={{ background: 'rgba(245,158,11,0.06)', color: 'var(--amber)' }}>
+                <Heart className="w-4 h-4" strokeWidth={2} />
+              </div>
+              <span className="ea-trust-label">جودة الأكل المنزلي</span>
+            </div>
+            <div className="ea-trust-card">
+              <div className="ea-trust-icon" style={{ background: 'rgba(74,222,128,0.06)', color: '#4ade80' }}>
+                <Shield className="w-4 h-4" strokeWidth={2} />
+              </div>
+              <span className="ea-trust-label">تجربة آمنة وبسيطة</span>
+            </div>
+            <div className="ea-trust-card">
+              <div className="ea-trust-icon" style={{ background: 'rgba(96,165,250,0.06)', color: '#60a5fa' }}>
+                <MapPin className="w-4 h-4" strokeWidth={2} />
+              </div>
+              <span className="ea-trust-label">مجتمع محلّي أصيل</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ Footer ═══ */}
+      <footer className="ea-footer">
+        <p className="ea-footer-brand">نَكهة — منصة الأكل المنزلي</p>
+        <div className="ea-footer-social">
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <Globe className="w-4 h-4" strokeWidth={2} />
+          </a>
+          <a href="mailto:contact@nakha.app" aria-label="Email">
+            <Mail className="w-4 h-4" strokeWidth={2} />
+          </a>
+        </div>
+        <div className="ea-footer-links">
+          <a href="/privacy" className="ea-footer-link">سياسة الخصوصية</a>
+          <a href="/terms" className="ea-footer-link">الشروط والأحكام</a>
+          <a href="/about" className="ea-footer-link">حول نَكهة</a>
+        </div>
+        <p className="ea-footer-made">صُنع بفخر في الجزائر 🇩🇿</p>
+      </footer>
 
       {/* ═══ Admin bypass ═══ */}
       {showBypass && (
