@@ -83,7 +83,7 @@ const ManageInviteCodes = () => {
       const randomCode = () => {
         const arr = new Uint8Array(4);
         crypto.getRandomValues(arr);
-        return `${INVITE_SYSTEM.codePrefix}-${Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase().slice(0, 8)}`;
+        return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase().slice(0, 8);
       };
 
       for (let i = 0; i < genCount; i++) {
