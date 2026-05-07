@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -47,10 +47,15 @@ import AdminRatings from './pages/admin/AdminRatings';
 import ManageInviteCodes from './pages/admin/ManageInviteCodes';
 import ManageWaitlist from './pages/admin/ManageWaitlist';
 
+const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/login'];
+
 function App() {
+  const location = useLocation();
   const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
 
-  if (EARLY_ACCESS.enabled && !bypassed) {
+  const isPassthrough = GATE_PASSTHROUGH.some((p) => location.pathname.startsWith(p));
+
+  if (EARLY_ACCESS.enabled && !bypassed && !isPassthrough) {
     return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
   }
 
