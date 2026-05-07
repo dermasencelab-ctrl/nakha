@@ -45,6 +45,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminReports from './pages/admin/AdminReports';
 import AdminRatings from './pages/admin/AdminRatings';
 import ManageInviteCodes from './pages/admin/ManageInviteCodes';
+import ManageWaitlist from './pages/admin/ManageWaitlist';
 
 function App() {
   const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
@@ -220,6 +221,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <ManageInviteCodes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/waitlist"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ManageWaitlist />
             </ProtectedRoute>
           }
         />

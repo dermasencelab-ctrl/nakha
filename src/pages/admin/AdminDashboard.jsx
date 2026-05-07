@@ -147,7 +147,7 @@ function AdminDashboard() {
   const { logout } = useAuth();
   const [stats, setStats] = useState({
     pendingCooks: 0, pendingTopups: 0, totalCooks: 0,
-    totalOrders: 0, completedOrders: 0, pendingOrders: 0, totalRevenue: 0,
+    totalOrders: 0, completedOrders: 0, pendingOrders: 0, totalRevenue: 0, waitlistCount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -160,11 +160,12 @@ function AdminDashboard() {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const [pcSnap, ptSnap, acSnap, ordSnap] = await Promise.all([
+        const [pcSnap, ptSnap, acSnap, ordSnap, wlSnap] = await Promise.all([
           getDocs(query(collection(db, 'cooks'), where('status', '==', 'pending'))),
           getDocs(query(collection(db, 'topup_requests'), where('status', '==', 'pending'))),
           getDocs(query(collection(db, 'cooks'), where('status', '==', 'approved'))),
           getDocs(collection(db, 'orders')),
+          getDocs(collection(db, 'waitlist')),
         ]);
         const orders = ordSnap.docs.map(d => d.data());
         const completed = orders.filter(o => o.status === 'completed');
@@ -174,7 +175,7 @@ function AdminDashboard() {
           pendingCooks: pcSnap.size, pendingTopups: ptSnap.size,
           totalCooks: acSnap.size, totalOrders: ordSnap.size,
           completedOrders: completed.length, pendingOrders: pending.length,
-          totalRevenue: revenue,
+          totalRevenue: revenue, waitlistCount: wlSnap.size,
         });
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -228,6 +229,11 @@ function AdminDashboard() {
       to: '/admin/invite-codes', label: 'رموز الدعوة', emoji: '🎟️',
       desc: 'إنشاء رموز دعوة للطباخات ومتابعة حالة الاستخدام',
       accent: '#8b5cf6',
+    },
+    {
+      to: '/admin/waitlist', label: 'قائمة الانتظار', emoji: '📋',
+      desc: 'أرقام المسجّلين في قائمة الانتظار وإحصائيات التسجيل اليومية',
+      accent: '#06b6d4',
     },
   ];
 
@@ -346,8 +352,12 @@ function AdminDashboard() {
               icon={ShoppingBag} accent="#3b82f6" delay={240}
             />
             <KpiCard
+              value={stats.waitlistCount} label="قائمة الانتظار"
+              icon={Users} accent="#06b6d4" delay={320}
+            />
+            <KpiCard
               value={stats.pendingOrders} label="طلبات معلّقة"
-              icon={Clock} accent="#f59e0b" delay={320} pulse={stats.pendingOrders > 0}
+              icon={Clock} accent="#f59e0b" delay={400} pulse={stats.pendingOrders > 0}
             />
           </div>
         )}
