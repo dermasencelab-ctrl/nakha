@@ -47,7 +47,7 @@ import AdminRatings from './pages/admin/AdminRatings';
 import ManageInviteCodes from './pages/admin/ManageInviteCodes';
 import ManageWaitlist from './pages/admin/ManageWaitlist';
 
-const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/login'];
+const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/login', '/admin'];
 
 function App() {
   const location = useLocation();
