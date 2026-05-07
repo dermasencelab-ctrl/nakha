@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { EARLY_ACCESS } from '../config/settings';
 import ImageUploader from '../components/ImageUploader';
 import {
   User,
@@ -25,6 +28,8 @@ import {
   Sparkles,
   X,
   Camera,
+  ShieldCheck,
+  KeyRound,
 } from 'lucide-react';
 
 // أنواع الطباخات
@@ -84,6 +89,38 @@ const specialtyGroups = [
 ];
 
 const CookSignup = () => {
+  const [partnerCode, setPartnerCode] = useState('');
+  const [codeVerified, setCodeVerified] = useState(!EARLY_ACCESS.enabled);
+  const [codeError, setCodeError] = useState('');
+  const [slotsRemaining, setSlotsRemaining] = useState(null);
+  const [checkingSlots, setCheckingSlots] = useState(EARLY_ACCESS.enabled);
+
+  useEffect(() => {
+    if (!EARLY_ACCESS.enabled) return;
+    const checkSlots = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'cooks'));
+        const remaining = EARLY_ACCESS.maxPartnerCooks - snap.size;
+        setSlotsRemaining(Math.max(0, remaining));
+      } catch { setSlotsRemaining(null); }
+      setCheckingSlots(false);
+    };
+    checkSlots();
+  }, []);
+
+  const verifyPartnerCode = () => {
+    setCodeError('');
+    if (slotsRemaining !== null && slotsRemaining <= 0) {
+      setCodeError('عذراً، تم اكتمال عدد الشركاء المؤسسين. ترقّبوا الإطلاق الرسمي!');
+      return;
+    }
+    if (partnerCode.trim().toUpperCase() === EARLY_ACCESS.partnerCode) {
+      setCodeVerified(true);
+    } else {
+      setCodeError('رمز الشراكة غير صحيح. تأكد من الرمز وأعد المحاولة.');
+    }
+  };
+
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
@@ -227,6 +264,106 @@ const CookSignup = () => {
     { num: 3, label: 'الملف', icon: Sparkles },
     { num: 4, label: 'كلمة المرور', icon: Lock },
   ];
+
+  if (EARLY_ACCESS.enabled && !codeVerified) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-300/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+          <div className="max-w-sm w-full">
+            {/* Badge */}
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex items-center gap-1.5 bg-orange-100 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-full text-[11px] font-black tracking-wide">
+                <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
+                وصول مبكر — شركاء فقط
+              </div>
+            </div>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-5">
+              <div className="relative">
+                <div className="absolute inset-0 bg-orange-400/25 rounded-3xl blur-2xl scale-150" />
+                <div className="relative w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-3xl flex items-center justify-center shadow-xl shadow-orange-500/30">
+                  <KeyRound className="w-10 h-10 text-white" strokeWidth={1.8} />
+                </div>
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-black text-stone-800 text-center mb-2">
+              التسجيل للشركاء المؤسسين
+            </h1>
+            <p className="text-sm text-stone-500 text-center leading-relaxed mb-8">
+              نَكهة في مرحلة الإطلاق المبكر. أدخلي رمز الشراكة للانضمام كطباخة مؤسِّسة.
+            </p>
+
+            {/* Slots counter */}
+            {!checkingSlots && slotsRemaining !== null && (
+              <div className={`flex items-center justify-center gap-2 mb-5 py-2.5 px-4 rounded-2xl text-xs font-bold ${
+                slotsRemaining > 5
+                  ? 'bg-green-50 border border-green-200 text-green-700'
+                  : slotsRemaining > 0
+                  ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                  : 'bg-red-50 border border-red-200 text-red-700'
+              }`}>
+                {slotsRemaining > 0
+                  ? `${slotsRemaining} مقعد متبقٍّ من أصل ${EARLY_ACCESS.maxPartnerCooks}`
+                  : 'اكتمل عدد الشركاء المؤسسين'}
+              </div>
+            )}
+
+            {/* Code input */}
+            <div className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 border border-stone-100 p-5 space-y-4">
+              <label className="flex items-center gap-2 text-xs font-bold text-stone-700">
+                <KeyRound className="w-4 h-4 text-orange-500" strokeWidth={2.4} />
+                رمز الشراكة
+              </label>
+              <input
+                type="text"
+                value={partnerCode}
+                onChange={(e) => { setPartnerCode(e.target.value.toUpperCase()); setCodeError(''); }}
+                placeholder="أدخلي الرمز هنا"
+                dir="ltr"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full px-4 py-3.5 bg-stone-50 border-2 border-stone-200 rounded-2xl text-sm font-mono font-bold text-stone-800 text-center placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition tracking-widest"
+                onKeyDown={(e) => e.key === 'Enter' && verifyPartnerCode()}
+              />
+              {codeError && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" strokeWidth={2.4} />
+                  <p className="text-xs font-bold text-red-700">{codeError}</p>
+                </div>
+              )}
+              <button
+                onClick={verifyPartnerCode}
+                disabled={!partnerCode.trim() || checkingSlots}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-orange-500/30 active:scale-[0.98] transition-all"
+              >
+                <ShieldCheck className="w-4 h-4" strokeWidth={2.5} />
+                تحقّق من الرمز
+              </button>
+            </div>
+
+            <div className="text-center mt-6 space-y-2">
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                ليس لديكِ رمز؟ تابعي صفحتنا للحصول على دعوة عند الإطلاق الرسمي.
+              </p>
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 active:scale-95 transition"
+              >
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                العودة للرئيسية
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, orderBy, limit, documentId } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -639,7 +639,7 @@ function GuestOrderSearch({ formatDate, formatTime }) {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    const rawId = inputValue.trim().replace(/^#/, '').toUpperCase();
+    const rawId = inputValue.trim().replace(/^#/, '');
     if (!rawId) return;
 
     setSearchLoading(true);
@@ -648,12 +648,25 @@ function GuestOrderSearch({ formatDate, formatTime }) {
     setHasSearched(false);
 
     try {
+      // Try exact document ID match first (full ID)
       const orderRef = doc(db, 'orders', rawId);
       const snap = await getDoc(orderRef);
       if (snap.exists()) {
         setFoundOrder({ id: snap.id, ...snap.data() });
       } else {
-        setSearchError('لم يُعثر على طلب بهذا الرمز. تأكد من صحة الرمز وأعد المحاولة.');
+        // Short code: IDs are displayed as first 8 chars uppercased,
+        // but actual Firestore IDs use mixed case. Scan all orders
+        // and match the prefix case-insensitively.
+        const prefix = rawId.toLowerCase();
+        const allSnap = await getDocs(collection(db, 'orders'));
+        const match = allSnap.docs.find(
+          (d) => d.id.slice(0, prefix.length).toLowerCase() === prefix
+        );
+        if (match) {
+          setFoundOrder({ id: match.id, ...match.data() });
+        } else {
+          setSearchError('لم يُعثر على طلب بهذا الرمز. تأكد من صحة الرمز وأعد المحاولة.');
+        }
       }
     } catch {
       setSearchError('حدث خطأ أثناء البحث. تحقق من اتصالك بالإنترنت وحاول مجدداً.');

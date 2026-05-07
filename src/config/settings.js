@@ -21,6 +21,17 @@ export const MIN_TOPUP_AMOUNT = 500;
 // ⚠️ الحد الذي يظهر تحته تحذير "رصيدك منخفض"
 export const LOW_BALANCE_WARNING = 200;
 
+// 🚫 أقصى رصيد سالب مسموح به (دج)
+export const MAX_NEGATIVE_BALANCE = -200;
+
+// 🔐 نظام الوصول المبكر (Early Access)
+export const EARLY_ACCESS = {
+  enabled: true,
+  partnerCode: 'NAKHA2026',
+  betaCode: 'BETA2026',
+  maxPartnerCooks: 15,
+};
+
 // 🎁 عرض المؤسسين (Founding Members)
 export const FOUNDING_MEMBERS = {
   enabled: true,                    // تفعيل/إيقاف العرض

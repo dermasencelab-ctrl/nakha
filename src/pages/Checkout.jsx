@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { EARLY_ACCESS } from '../config/settings';
 import {
   ShoppingBag, ArrowRight, ArrowLeft, User, Phone, MapPin,
   MessageSquare, Calendar, Zap, Check, AlertCircle, Package,
-  ChevronLeft, Clock, Loader2,
+  ChevronLeft, Clock, Loader2, KeyRound, ShieldCheck, Ticket,
 } from 'lucide-react';
 
 const getUnitLabel = (unit) => {
@@ -39,6 +40,38 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 3;
 
+  const [betaCode, setBetaCode] = useState('');
+  const [betaVerified, setBetaVerified] = useState(!EARLY_ACCESS.enabled);
+  const [betaError, setBetaError] = useState('');
+  const [betaChecking, setBetaChecking] = useState(false);
+
+  const verifyBetaCode = async () => {
+    setBetaError('');
+    setBetaChecking(true);
+    const code = betaCode.trim().toUpperCase();
+
+    if (code === EARLY_ACCESS.betaCode) {
+      setBetaVerified(true);
+      setBetaChecking(false);
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'beta_whitelist'), where('phone', '==', code));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        setBetaVerified(true);
+      } else {
+        setBetaError('رمز الوصول غير صحيح. تأكد من الرمز أو تواصل مع الإدارة.');
+      }
+    } catch {
+      if (code) {
+        setBetaError('رمز الوصول غير صحيح. تأكد من الرمز أو تواصل مع الإدارة.');
+      }
+    }
+    setBetaChecking(false);
+  };
+
   // Compute the minimum allowed pickup based on the longest prep time in the cart
   const maxPrepMinutes = Math.max(...cart.map((item) => item.prepTime || 0), 30);
   const minPickupDate = new Date(Date.now() + maxPrepMinutes * 60 * 1000);
@@ -58,6 +91,103 @@ const Checkout = () => {
           <Link to="/cooks" className="inline-flex items-center gap-2 bg-gradient-to-l from-orange-500 to-orange-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-orange-500/30 active:scale-95 transition">
             تصفّح الطباخات
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (EARLY_ACCESS.enabled && !betaVerified && cart.length > 0) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#FFF5E6] relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-orange-300/15 rounded-full blur-3xl -translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-amber-300/15 rounded-full blur-3xl translate-y-1/3 translate-x-1/3 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
+          <div className="max-w-sm w-full">
+            {/* Badge */}
+            <div className="flex justify-center mb-6">
+              <div className="inline-flex items-center gap-1.5 bg-amber-100 border border-amber-200 text-amber-700 px-3 py-1.5 rounded-full text-[11px] font-black tracking-wide">
+                <Ticket className="w-3.5 h-3.5" strokeWidth={2.5} />
+                وصول تجريبي — بدعوة فقط
+              </div>
+            </div>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-5">
+              <div className="relative">
+                <div className="absolute inset-0 bg-amber-400/20 rounded-3xl blur-2xl scale-150" />
+                <div className="relative w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl flex items-center justify-center shadow-xl shadow-amber-500/30">
+                  <ShieldCheck className="w-10 h-10 text-white" strokeWidth={1.8} />
+                </div>
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-black text-stone-800 text-center mb-2">
+              الطلب متاح بدعوة فقط
+            </h1>
+            <p className="text-sm text-stone-500 text-center leading-relaxed mb-8">
+              نَكهة في مرحلة تجريبية حالياً. أدخل رمز الوصول لإتمام طلبك.
+            </p>
+
+            {/* Code input */}
+            <div className="bg-white rounded-3xl shadow-xl shadow-stone-900/5 border border-stone-100 p-5 space-y-4">
+              <label className="flex items-center gap-2 text-xs font-bold text-stone-700">
+                <KeyRound className="w-4 h-4 text-amber-500" strokeWidth={2.4} />
+                رمز الوصول التجريبي
+              </label>
+              <input
+                type="text"
+                value={betaCode}
+                onChange={(e) => { setBetaCode(e.target.value.toUpperCase()); setBetaError(''); }}
+                placeholder="أدخل الرمز هنا"
+                dir="ltr"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full px-4 py-3.5 bg-stone-50 border-2 border-stone-200 rounded-2xl text-sm font-mono font-bold text-stone-800 text-center placeholder:text-stone-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition tracking-widest"
+                onKeyDown={(e) => e.key === 'Enter' && verifyBetaCode()}
+              />
+              {betaError && (
+                <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" strokeWidth={2.4} />
+                  <p className="text-xs font-bold text-red-700">{betaError}</p>
+                </div>
+              )}
+              <button
+                onClick={verifyBetaCode}
+                disabled={!betaCode.trim() || betaChecking}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 disabled:opacity-50 text-white py-3.5 rounded-2xl font-extrabold text-sm shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all"
+              >
+                {betaChecking ? (
+                  <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" strokeWidth={2.5} />
+                )}
+                تحقّق من الرمز
+              </button>
+            </div>
+
+            <div className="text-center mt-6 space-y-3">
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                يمكنك الحصول على رمز الوصول من خلال متابعة صفحتنا أو التواصل مع الإدارة.
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <Link
+                  to="/cart"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-700 active:scale-95 transition"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  العودة للسلة
+                </Link>
+                <Link
+                  to="/cooks"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 hover:text-orange-700 active:scale-95 transition"
+                >
+                  تصفّح الطباخات
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -7,6 +8,8 @@ import Checkout from './pages/Checkout';
 import About from './pages/About';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import { EARLY_ACCESS } from './config/settings';
+import EarlyAccessGate from './pages/EarlyAccessGate';
 
 // صفحات المستخدم
 import Home from './pages/Home';
@@ -42,6 +45,12 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminRatings from './pages/admin/AdminRatings';
 
 function App() {
+  const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
+
+  if (EARLY_ACCESS.enabled && !bypassed) {
+    return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
+  }
+
   return (
     <AuthProvider>
       <Navbar />

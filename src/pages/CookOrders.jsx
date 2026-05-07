@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  collection, query, where, onSnapshot, doc, updateDoc,
+  collection, query, where, onSnapshot, doc, updateDoc, getDoc,
   addDoc, serverTimestamp, increment, runTransaction,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { COMMISSION_RATE, FOUNDING_MEMBERS } from '../config/settings';
+import { COMMISSION_RATE, FOUNDING_MEMBERS, MAX_NEGATIVE_BALANCE } from '../config/settings';
 import { Phone, PhoneOff, Lock, Bell, BellOff } from 'lucide-react';
 import { useOrderNotifications } from '../hooks/useOrderNotifications';
 
@@ -83,6 +83,18 @@ const CookOrders = () => {
       const order = orders.find((o) => o.id === orderId);
       if (!order) throw new Error('الطلب غير موجود');
 
+      if (newStatus === 'preparing' && userProfile?.cookId) {
+        const cookRef = doc(db, 'cooks', userProfile.cookId);
+        const cookSnap = await getDoc(cookRef);
+        const cookData = cookSnap.data() || {};
+        const balance = cookData.balance || 0;
+        if (balance <= 0) {
+          alert('لا يمكن قبول طلبات جديدة حالياً. يُرجى شحن الرصيد أولاً.');
+          setActionLoading(null);
+          return;
+        }
+      }
+
       if (newStatus === 'ready' && userProfile?.cookId) {
         const totalPrice = order.totalPrice || calculateTotal(order);
         const cookRef = doc(db, 'cooks', userProfile.cookId);
@@ -112,6 +124,14 @@ const CookOrders = () => {
           } else {
             const commission = Math.round(totalPrice * COMMISSION_RATE);
             const balanceAfter = balanceBefore - commission;
+
+            if (balanceBefore <= 0) {
+              throw new Error('INSUFFICIENT_BALANCE');
+            }
+            if (balanceAfter < MAX_NEGATIVE_BALANCE) {
+              throw new Error('INSUFFICIENT_BALANCE');
+            }
+
             transaction.update(cookRef, {
               balance: balanceAfter,
               totalCommission: increment(commission),
@@ -144,7 +164,11 @@ const CookOrders = () => {
       // onSnapshot handles UI refresh automatically
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('حدث خطأ أثناء تحديث الطلب');
+      if (error.message === 'INSUFFICIENT_BALANCE') {
+        alert('لا يمكن إتمام هذه العملية. يُرجى شحن الرصيد أولاً.');
+      } else {
+        alert('حدث خطأ أثناء تحديث الطلب');
+      }
     } finally {
       setActionLoading(null);
     }
