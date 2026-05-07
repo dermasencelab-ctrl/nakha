@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Phone, ArrowLeft, Check, AlertCircle, Loader2, ChefHat, ShoppingBag, Truck, Shield, Heart, MapPin, Globe, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Phone, ArrowLeft, Check, AlertCircle, Loader2, ChefHat, ShoppingBag, Truck, Shield, Heart, MapPin, Globe, Mail, KeyRound } from 'lucide-react';
 
 const ADMIN_BYPASS_CODE = 'NAKHA-ADMIN-2026';
 
 export default function EarlyAccessGate({ onBypass }) {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState('');
@@ -631,6 +633,32 @@ export default function EarlyAccessGate({ onBypass }) {
           margin-bottom: 0.5rem;
         }
 
+        /* ── Cook invite button ── */
+        .ea-cook-invite {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          padding: 0.85rem 1rem;
+          background: rgba(234,88,12,0.04);
+          border: 1.5px solid rgba(234,88,12,0.15);
+          border-radius: 16px;
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          font-size: 0.82rem;
+          font-weight: 600;
+          color: var(--accent);
+          cursor: pointer;
+          transition: all 0.3s;
+          margin-top: 0.75rem;
+        }
+        .ea-cook-invite:hover {
+          background: rgba(234,88,12,0.08);
+          border-color: rgba(234,88,12,0.3);
+          box-shadow: 0 0 20px rgba(234,88,12,0.1);
+        }
+        .ea-cook-invite:active { transform: scale(0.98); }
+
         @media (min-width: 640px) {
           .ea-section { max-width: 520px; }
           .ea-headline { font-size: 2.5rem; }
@@ -744,6 +772,14 @@ export default function EarlyAccessGate({ onBypass }) {
               )}
             </form>
           )}
+
+          <button
+            onClick={() => navigate('/cook-invite')}
+            className="ea-cook-invite"
+          >
+            <KeyRound className="w-4 h-4" strokeWidth={2.2} />
+            أنا طباخة ولديّ رمز دعوة
+          </button>
         </div>
       </div>
 
