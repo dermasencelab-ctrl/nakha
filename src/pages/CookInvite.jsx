@@ -361,7 +361,7 @@ const CookInvite = () => {
             autoCorrect="off"
             spellCheck={false}
             onKeyDown={(e) => e.key === 'Enter' && validateCode()}
-            className="w-full px-4 py-4 bg-white/[0.06] border-2 border-white/[0.1] rounded-2xl text-sm font-mono font-bold text-white text-center placeholder:text-stone-600 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/30 transition tracking-[0.3em]"
+            className="w-full px-4 py-4 bg-white/[0.06] border-2 border-white/[0.1] rounded-2xl text-sm font-mono font-bold text-white text-center placeholder:text-stone-600 placeholder:font-normal placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/30 transition tracking-[0.3em]"
           />
 
           {error && (
