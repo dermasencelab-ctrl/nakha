@@ -186,8 +186,8 @@ const ManageWaitlist = () => {
           </p>
           <div className="flex gap-2">
             {[
-              { prefix: '05', label: 'موبيليس', color: '#4ade80' },
-              { prefix: '06', label: 'أوريدو', color: '#f97316' },
+              { prefix: '05', label: 'أوريدو', color: '#f97316' },
+              { prefix: '06', label: 'موبيليس', color: '#4ade80' },
               { prefix: '07', label: 'جيزي', color: '#60a5fa' },
             ].map((c) => {
               const count = carrierStats[c.prefix] || 0;
@@ -308,12 +308,12 @@ const ManageWaitlist = () => {
 
                 {/* Carrier tag */}
                 <span className={`text-[9px] font-bold px-2 py-1 rounded-full ${
-                  entry.phone?.startsWith('05') ? 'text-green-400 bg-green-500/10' :
-                  entry.phone?.startsWith('06') ? 'text-orange-400 bg-orange-500/10' :
+                  entry.phone?.startsWith('05') ? 'text-orange-400 bg-orange-500/10' :
+                  entry.phone?.startsWith('06') ? 'text-green-400 bg-green-500/10' :
                   'text-blue-400 bg-blue-500/10'
                 }`}>
-                  {entry.phone?.startsWith('05') ? 'موبيليس' :
-                   entry.phone?.startsWith('06') ? 'أوريدو' : 'جيزي'}
+                  {entry.phone?.startsWith('05') ? 'أوريدو' :
+                   entry.phone?.startsWith('06') ? 'موبيليس' : 'جيزي'}
                 </span>
 
                 {/* Delete */}
