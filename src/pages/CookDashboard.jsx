@@ -38,6 +38,7 @@ import {
   CalendarClock,
   UserPen,
 } from 'lucide-react';
+import CookOnboardingChecklist from '../components/CookOnboardingChecklist';
 
 const CookDashboard = () => {
   const { userProfile, logout } = useAuth();
@@ -305,6 +306,16 @@ const CookDashboard = () => {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 space-y-4">
+        {/* ============================================ */}
+        {/* قائمة إعداد الملف (Onboarding Checklist) */}
+        {/* ============================================ */}
+        {cookData && !cookData.onboardingComplete && (
+          <CookOnboardingChecklist
+            cookData={cookData}
+            onComplete={() => setCookData((prev) => prev ? { ...prev, onboardingComplete: true } : prev)}
+          />
+        )}
+
         {/* ============================================ */}
         {/* 🔴 تنبيه وصول طلب جديد — فوري (real-time) */}
         {/* ============================================ */}

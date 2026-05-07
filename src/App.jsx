@@ -22,6 +22,7 @@ import MyOrders from './pages/MyOrders';
 import Login from './pages/Login';
 import CookSignup from './pages/CookSignup';
 import CustomerSignup from './pages/CustomerSignup';
+import CookInvite from './pages/CookInvite';
 import CookPending from './pages/CookPending';
 import CookRejected from './pages/CookRejected';
 import CookDashboard from './pages/CookDashboard';
@@ -43,6 +44,7 @@ import ManageTopups from './pages/admin/ManageTopups';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminReports from './pages/admin/AdminReports';
 import AdminRatings from './pages/admin/AdminRatings';
+import ManageInviteCodes from './pages/admin/ManageInviteCodes';
 
 function App() {
   const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
@@ -84,6 +86,7 @@ function App() {
 
         {/* صفحات المصادقة */}
         <Route path="/login" element={<Login />} />
+        <Route path="/cook-invite" element={<CookInvite />} />
         <Route path="/cook/signup" element={<CookSignup />} />
         <Route path="/cook/pending" element={<CookPending />} />
         <Route path="/cook/rejected" element={<CookRejected />} />
@@ -209,6 +212,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminRatings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/invite-codes"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ManageInviteCodes />
             </ProtectedRoute>
           }
         />

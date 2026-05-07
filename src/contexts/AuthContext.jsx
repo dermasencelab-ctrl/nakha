@@ -7,8 +7,9 @@ import {
   setPersistence,
   browserLocalPersistence,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp, query, collection, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, addDoc, serverTimestamp, query, collection, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import { FOUNDING_MEMBERS } from '../config/settings';
 
 // converts phone number to a valid email for Firebase Auth
 const phoneToEmail = (phone) => `${phone}@nakha.customer`;
@@ -61,9 +62,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   // تسجيل طباخة جديدة
-  const signupCook = async (email, password, cookData) => {
+  const signupCook = async (email, password, cookData, inviteData = null) => {
     // التحقق من عدم تكرار رقم الهاتف
-    const { getDocs, query, where, collection } = await import('firebase/firestore');
     const phoneQuery = query(
       collection(db, 'cooks'),
       where('phone', '==', cookData.phone)
@@ -87,6 +87,55 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
 
+    // Validate invite token against Firestore (not just sessionStorage)
+    let isInvited = false;
+    let inviteCodeDocId = null;
+    let inviteTokenDocId = null;
+    if (inviteData?.token) {
+      const tokenQuery = query(
+        collection(db, 'invite_tokens'),
+        where('token', '==', inviteData.token),
+        where('used', '==', false)
+      );
+      const tokenSnap = await getDocs(tokenQuery);
+      if (!tokenSnap.empty) {
+        const tokenDoc = tokenSnap.docs[0];
+        const tokenInfo = tokenDoc.data();
+        const expiresAt = tokenInfo.expires_at?.toDate ? tokenInfo.expires_at.toDate() : null;
+        if (expiresAt && expiresAt > new Date()) {
+          inviteTokenDocId = tokenDoc.id;
+          inviteCodeDocId = tokenInfo.invite_code_id;
+
+          // Double-check the invite code is still valid
+          if (inviteCodeDocId) {
+            const codeDoc = await getDoc(doc(db, 'invite_codes', inviteCodeDocId));
+            if (codeDoc.exists()) {
+              const codeData = codeDoc.data();
+              if (!codeData.used && codeData.active !== false) {
+                const codeExpiry = codeData.expires_at?.toDate ? codeData.expires_at.toDate() : null;
+                if (!codeExpiry || codeExpiry > new Date()) {
+                  isInvited = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Determine founding member status
+    let foundingMemberNumber = null;
+    if (isInvited && FOUNDING_MEMBERS.enabled) {
+      const cooksSnap = await getDocs(
+        query(collection(db, 'cooks'), where('isFoundingMember', '==', true))
+      );
+      if (cooksSnap.size < FOUNDING_MEMBERS.maxCount) {
+        foundingMemberNumber = cooksSnap.size + 1;
+      }
+    }
+
+    const grantFounder = isInvited && foundingMemberNumber !== null;
+
     // إنشاء حساب في Firebase Auth
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
@@ -107,18 +156,52 @@ export const AuthProvider = ({ children }) => {
       portfolioImages: cookData.portfolioImages || [],
       status: 'pending',
       rating: 0,
-      balance: 0,
+      balance: grantFounder ? FOUNDING_MEMBERS.welcomeBalance : 0,
       totalCommission: 0,
       totalOrders: 0,
       totalRatings: 0,
       averageRating: 0,
       ratingSum: 0,
-      isFoundingMember: false,
-      foundingMemberNumber: null,
-      freeOrdersRemaining: 0,
+      isFoundingMember: grantFounder,
+      foundingMemberNumber: foundingMemberNumber,
+      freeOrdersRemaining: grantFounder ? FOUNDING_MEMBERS.freeOrders : 0,
       freeOrdersUsed: 0,
+      inviteCode: inviteData?.code || null,
+      onboardingComplete: false,
       createdAt: serverTimestamp(),
     });
+
+    // Mark invite code as used
+    if (isInvited && inviteCodeDocId) {
+      await updateDoc(doc(db, 'invite_codes', inviteCodeDocId), {
+        used: true,
+        used_by: user.uid,
+        used_by_name: cookData.name,
+        used_by_email: email,
+        used_at: serverTimestamp(),
+      });
+    }
+
+    // Mark invite token as consumed
+    if (inviteTokenDocId) {
+      await updateDoc(doc(db, 'invite_tokens', inviteTokenDocId), {
+        used: true,
+        used_by: user.uid,
+        used_at: serverTimestamp(),
+      });
+    }
+
+    // Log analytics event
+    try {
+      await addDoc(collection(db, 'invite_analytics'), {
+        event: 'account_created',
+        code: inviteData?.code || null,
+        userId: user.uid,
+        isFoundingMember: grantFounder,
+        foundingMemberNumber,
+        timestamp: serverTimestamp(),
+      });
+    } catch {}
 
     // إنشاء وثيقة في users
     const userProfileData = {

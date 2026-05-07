@@ -148,6 +148,15 @@ const CookDishes = () => {
         await updateDoc(doc(db, 'dishes', editingDish.id), { ...dishData, updatedAt: serverTimestamp() });
       } else {
         await addDoc(collection(db, 'dishes'), { ...dishData, createdAt: serverTimestamp() });
+        if (dishes.length === 0) {
+          try {
+            await addDoc(collection(db, 'invite_analytics'), {
+              event: 'first_dish_uploaded',
+              userId: userProfile?.cookId,
+              timestamp: serverTimestamp(),
+            });
+          } catch {}
+        }
       }
       setShowForm(false);
       await fetchDishes();

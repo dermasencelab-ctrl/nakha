@@ -32,6 +32,18 @@ export const EARLY_ACCESS = {
   maxPartnerCooks: 15,
 };
 
+// 🎟️ نظام الدعوات (Invite Codes)
+export const INVITE_SYSTEM = {
+  enabled: true,
+  maxCodes: 15,
+  codePrefix: 'NAKHA',
+  expirationDays: 30,
+  requireAssignment: false,
+  tokenTTLMinutes: 60,
+  roles: ['cook'],
+  campaign: 'founding_bechar_2026',
+};
+
 // 🎁 عرض المؤسسين (Founding Members)
 export const FOUNDING_MEMBERS = {
   enabled: true,                    // تفعيل/إيقاف العرض

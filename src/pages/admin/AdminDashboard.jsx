@@ -224,6 +224,11 @@ function AdminDashboard() {
       desc: 'مراجعة تقييمات الزبائن وحذف أو إخفاء التقييمات المسيئة',
       accent: '#f59e0b',
     },
+    {
+      to: '/admin/invite-codes', label: 'رموز الدعوة', emoji: '🎟️',
+      desc: 'إنشاء رموز دعوة للطباخات ومتابعة حالة الاستخدام',
+      accent: '#8b5cf6',
+    },
   ];
 
   return (
