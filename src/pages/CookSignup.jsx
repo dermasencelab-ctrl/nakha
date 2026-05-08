@@ -99,6 +99,32 @@ const CookSignup = () => {
   const [inviteToken, setInviteToken] = useState(null);
   const [tokenVerified, setTokenVerified] = useState(!INVITE_SYSTEM.enabled);
   const [tokenLoading, setTokenLoading] = useState(INVITE_SYSTEM.enabled);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 4;
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    neighborhood: '',
+    bio: '',
+    photo: '',
+    cookType: 'home_cook',
+    specialties: [],
+    cookDescription: '',
+    socialLink: '',
+    portfolioImages: [],
+  });
+
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const { signupCook } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!INVITE_SYSTEM.enabled) return;
@@ -167,33 +193,6 @@ const CookSignup = () => {
       </div>
     );
   }
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    neighborhood: '',
-    bio: '',
-    photo: '',
-    cookType: 'home_cook',
-    specialties: [],
-    cookDescription: '',
-    socialLink: '',
-    portfolioImages: [],
-  });
-
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const { signupCook } = useAuth();
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
