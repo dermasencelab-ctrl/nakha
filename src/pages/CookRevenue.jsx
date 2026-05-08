@@ -102,7 +102,6 @@ function CookRevenue() {
 
   const completedOrders = filteredOrders.filter((o) => o.status === 'completed');
 
-  // إجمالي الإيرادات (بعد العمولة 9%)
   const totalRevenue = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.91, 0);
   const avgOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
 

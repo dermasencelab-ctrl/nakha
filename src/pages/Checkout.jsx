@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { collection, addDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, setDoc, serverTimestamp, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { EARLY_ACCESS } from '../config/settings';
 import {
@@ -230,7 +230,9 @@ const Checkout = () => {
     if (!validateStep(1) || !validateStep(2)) return;
     setSubmitting(true);
     try {
-      const orderPromises = cookGroups.map((group) => {
+      const orderRefs = cookGroups.map(() => doc(collection(db, 'orders')));
+      const orderIds = orderRefs.map((r) => r.id);
+      const orderPromises = cookGroups.map((group, i) => {
         const orderData = {
           customerName: customerName.trim(),
           customerPhone,
@@ -252,12 +254,12 @@ const Checkout = () => {
           requestedPickupTime,
           notes: notes.trim() || '',
           status: 'pending',
+          shortCode: orderRefs[i].id.slice(0, 8).toUpperCase(),
           createdAt: serverTimestamp(),
         };
-        return addDoc(collection(db, 'orders'), orderData);
+        return setDoc(orderRefs[i], orderData);
       });
-      const results = await Promise.all(orderPromises);
-      const orderIds = results.map((r) => r.id);
+      await Promise.all(orderPromises);
 
       // WhatsApp notifications to each cook
       for (let i = 0; i < cookGroups.length; i++) {

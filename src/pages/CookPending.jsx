@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_PHONE } from '../config/settings';
 import {
   Clock,
   CheckCircle,
@@ -22,8 +23,7 @@ const CookPending = () => {
     await logout();
   };
 
-  // رقم واتساب الدعم (غيّره لرقمك)
-  const supportWhatsApp = 'https://wa.me/213549741892?text=السلام عليكم، سجّلت كطباخة في نَكهة واحتاج استفسار';
+  const supportWhatsApp = `https://wa.me/${ADMIN_PHONE}?text=السلام عليكم، سجّلت كطباخة في نَكهة واحتاج استفسار`;
 
   return (
     <div

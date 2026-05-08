@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Cart from './pages/Cart';
@@ -47,7 +46,7 @@ import AdminRatings from './pages/admin/AdminRatings';
 import ManageInviteCodes from './pages/admin/ManageInviteCodes';
 import ManageWaitlist from './pages/admin/ManageWaitlist';
 
-const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/login', '/admin'];
+const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/cook/pending', '/cook/rejected', '/login', '/admin'];
 const INVITE_ROUTES = ['/cook-invite'];
 
 function InviteHeader() {
@@ -86,9 +85,9 @@ function App() {
   };
 
   return (
-    <AuthProvider>
+    <>
       {isInviteFlow ? <InviteHeader /> : <Navbar />}
-      {EARLY_ACCESS.enabled && !isInviteFlow && !location.pathname.startsWith('/cook/signup') && (
+      {EARLY_ACCESS.enabled && !isInviteFlow && !location.pathname.startsWith('/cook/') && (
         <button
           onClick={exitBypass}
           className="fixed bottom-20 left-4 z-50 bg-black/70 text-orange-400 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm border border-orange-800/50 hover:bg-orange-900/50 transition-colors"
@@ -272,7 +271,7 @@ function App() {
           }
         />
       </Routes>
-    </AuthProvider>
+    </>
   );
 }
 

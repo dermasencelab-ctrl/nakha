@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, query, where, getDocs, doc, getDoc, orderBy, limit, documentId } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
+import { ADMIN_PHONE } from '../config/settings';
 import {
   ArrowRight,
   Package,
@@ -325,7 +326,7 @@ function OrderCard({ order, idx, formatDate, formatTime }) {
  // التواصل مع خدمة العملاء (الأدمن)
   const handleContact = () => {
     const text = `السلام عليكم، بخصوص طلبي رقم #${shortId} من الطباخة "${order.cookName}".\n\nاسم الطبق: ${order.dishName || 'غير محدد'}\nالحالة: ${status.label}\n\nملاحظتي:\n`;
-    const adminPhone = '213549741892'; // ← غيّر هذا لرقمك أنت كأدمن
+    const adminPhone = ADMIN_PHONE;
     window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -654,15 +655,12 @@ function GuestOrderSearch({ formatDate, formatTime }) {
       if (snap.exists()) {
         setFoundOrder({ id: snap.id, ...snap.data() });
       } else {
-        // Short code: IDs are displayed as first 8 chars uppercased,
-        // but actual Firestore IDs use mixed case. Scan all orders
-        // and match the prefix case-insensitively.
-        const prefix = rawId.toLowerCase();
-        const allSnap = await getDocs(collection(db, 'orders'));
-        const match = allSnap.docs.find(
-          (d) => d.id.slice(0, prefix.length).toLowerCase() === prefix
-        );
-        if (match) {
+        // Query by the indexed shortCode field
+        const code = rawId.toUpperCase();
+        const q = query(collection(db, 'orders'), where('shortCode', '==', code));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) {
+          const match = qSnap.docs[0];
           setFoundOrder({ id: match.id, ...match.data() });
         } else {
           setSearchError('لم يُعثر على طلب بهذا الرمز. تأكد من صحة الرمز وأعد المحاولة.');

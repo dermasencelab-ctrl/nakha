@@ -56,7 +56,7 @@ const CookWallet = () => {
 
   useEffect(() => {
     fetchData();
-  }, [userProfile]);
+  }, [userProfile?.cookId]);
 
   const formatDate = (timestamp) => {
     if (!timestamp?.seconds) return '-';

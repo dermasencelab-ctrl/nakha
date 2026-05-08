@@ -83,18 +83,6 @@ const CookOrders = () => {
       const order = orders.find((o) => o.id === orderId);
       if (!order) throw new Error('الطلب غير موجود');
 
-      if (newStatus === 'preparing' && userProfile?.cookId) {
-        const cookRef = doc(db, 'cooks', userProfile.cookId);
-        const cookSnap = await getDoc(cookRef);
-        const cookData = cookSnap.data() || {};
-        const balance = cookData.balance || 0;
-        if (balance <= 0) {
-          alert('لا يمكن قبول طلبات جديدة حالياً. يُرجى شحن الرصيد أولاً.');
-          setActionLoading(null);
-          return;
-        }
-      }
-
       if (newStatus === 'ready' && userProfile?.cookId) {
         const totalPrice = order.totalPrice || calculateTotal(order);
         const cookRef = doc(db, 'cooks', userProfile.cookId);

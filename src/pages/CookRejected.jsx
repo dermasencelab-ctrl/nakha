@@ -15,8 +15,8 @@ export default function CookRejected() {
   const { logout } = useAuth();
 
   const handleRetry = async () => {
-    await logout();
     navigate('/cook/signup');
+    await logout();
   };
 
   return (

@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import ImageUploader from '../components/ImageUploader';
+import { getUnitLabel, formatPrepTime } from '../utils/units';
 import { ArrowRight, Plus, ChefHat, Clock } from 'lucide-react';
 
 const PREP_TIME_OPTIONS = [
@@ -21,14 +22,6 @@ const PREP_TIME_OPTIONS = [
   { value: '1440', label: 'يوم كامل (24 ساعة)' },
   { value: '2880', label: 'يومان (48 ساعة)' },
 ];
-
-const PREP_TIME_LABELS = {
-  30: '30 دقيقة', 60: 'ساعة', 90: 'ساعة ونصف', 120: 'ساعتان',
-  180: '3 ساعات', 240: '4 ساعات', 360: '6 ساعات', 480: '8 ساعات',
-  720: '12 ساعة', 1440: '24 ساعة', 2880: 'يومان',
-};
-const formatPrepTime = (mins) =>
-  PREP_TIME_LABELS[mins] || (mins < 60 ? `${mins} دقيقة` : `${Math.floor(mins / 60)} ساعات`);
 
 const CookDishes = () => {
   const { userProfile } = useAuth();
@@ -71,14 +64,6 @@ const CookDishes = () => {
     { value: 'dozen', label: '🥚 دزينة (12)', example: 'كعك، محاجب' },
   ];
 
-  const getUnitLabel = (unit) => {
-    const labels = {
-      plate: 'طبق', kg: 'كغ', box: 'علبة',
-      piece: 'حبة', liter: 'لتر', dozen: 'دزينة',
-    };
-    return labels[unit] || 'وحدة';
-  };
-
   const fetchDishes = async () => {
     if (!userProfile?.cookId) return;
     setLoading(true);
@@ -95,7 +80,7 @@ const CookDishes = () => {
     }
   };
 
-  useEffect(() => { fetchDishes(); }, [userProfile]);
+  useEffect(() => { fetchDishes(); }, [userProfile?.cookId]);
 
   const handleAddNew = () => {
     setEditingDish(null);
@@ -190,7 +175,7 @@ const CookDishes = () => {
   return (
     <div className="min-h-screen bg-[#FFF5E6] pb-28" dir="rtl">
       {/* رأس الصفحة الثابت */}
-      <header className="sticky top-0 z-30 bg-[#FFF5E6]/95 backdrop-blur-md border-b border-stone-100">
+      <header className="sticky top-16 z-30 bg-[#FFF5E6]/95 backdrop-blur-md border-b border-stone-100">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <Link
             to="/cook/dashboard"

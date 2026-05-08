@@ -24,26 +24,7 @@ import {
 import { useCart } from '../contexts/CartContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { DAYS, isInSchedule } from '../utils/schedule';
-
-const PREP_TIME_LABELS = {
-  30: '30 دقيقة', 60: 'ساعة', 90: 'ساعة ونصف', 120: 'ساعتان',
-  180: '3 ساعات', 240: '4 ساعات', 360: '6 ساعات', 480: '8 ساعات',
-  720: '12 ساعة', 1440: '24 ساعة', 2880: 'يومان',
-};
-const formatPrepTime = (mins) =>
-  PREP_TIME_LABELS[mins] || (mins < 60 ? `${mins} دقيقة` : `${Math.floor(mins / 60)} ساعات`);
-
-const getUnitLabel = (unit) => {
-  const labels = {
-    plate: 'طبق',
-    kg: 'كغ',
-    box: 'علبة',
-    piece: 'حبة',
-    liter: 'لتر',
-    dozen: 'دزينة',
-  };
-  return labels[unit] || 'وحدة';
-};
+import { getUnitLabel, formatPrepTime } from '../utils/units';
 
 const cookTypeLabels = {
   home_cook: { emoji: '👩‍🍳', label: 'طباخة حرة' },

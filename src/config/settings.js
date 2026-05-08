@@ -2,6 +2,9 @@
 // إعدادات نَكهة - يمكن تعديلها بسهولة
 // ============================================
 
+// 📞 Admin / support WhatsApp number (international format, no +)
+export const ADMIN_PHONE = '213549741892';
+
 // 💳 معلومات الدفع (BaridiMob)
 export const PAYMENT_INFO = {
   rip: '00799999004412274611',  // 

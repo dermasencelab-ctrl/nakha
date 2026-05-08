@@ -31,10 +31,20 @@ export default function Favorites() {
           )
         );
 
-        const dishesSnap = await getDocs(
-          query(collection(db, 'dishes'), where('available', '==', true))
+        const dishChunks = [];
+        for (let i = 0; i < ids.length; i += 30) dishChunks.push(ids.slice(i, i + 30));
+        const dishResults = await Promise.all(
+          dishChunks.map((chunk) =>
+            getDocs(query(
+              collection(db, 'dishes'),
+              where('cookId', 'in', chunk),
+              where('available', '==', true)
+            ))
+          )
         );
-        const availableDishes = dishesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const availableDishes = dishResults.flatMap((snap) =>
+          snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        );
 
         const allCooks = results.flatMap((snap) =>
           snap.docs.map((d) => {

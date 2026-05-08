@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { getUnitLabel } from '../utils/units';
 import {
   ShoppingBag,
   Plus,
@@ -15,18 +16,6 @@ import {
   ChevronLeft,
   Sparkles,
 } from 'lucide-react';
-
-const getUnitLabel = (unit) => {
-  const labels = {
-    plate: 'طبق',
-    kg: 'كغ',
-    box: 'علبة',
-    piece: 'حبة',
-    liter: 'لتر',
-    dozen: 'دزينة',
-  };
-  return labels[unit] || '';
-};
 
 const Cart = () => {
   const navigate = useNavigate();
