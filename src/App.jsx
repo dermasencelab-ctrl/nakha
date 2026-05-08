@@ -48,12 +48,33 @@ import ManageInviteCodes from './pages/admin/ManageInviteCodes';
 import ManageWaitlist from './pages/admin/ManageWaitlist';
 
 const GATE_PASSTHROUGH = ['/cook-invite', '/cook/signup', '/login', '/admin'];
+const INVITE_ROUTES = ['/cook-invite'];
+
+function InviteHeader() {
+  return (
+    <header
+      dir="rtl"
+      className="fixed top-0 right-0 left-0 z-40 bg-[#0D0B09]/90 backdrop-blur-xl border-b border-white/[0.06] pt-safe"
+    >
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30 overflow-hidden">
+            <img src="/nakha-logo.png" alt="نَكهة" className="w-7 h-7 object-contain" />
+          </div>
+          <span className="text-lg font-extrabold text-white leading-none">نَكهة</span>
+        </div>
+        <span className="text-[11px] font-bold text-orange-400/80">وصول خاص بالدعوة</span>
+      </div>
+    </header>
+  );
+}
 
 function App() {
   const location = useLocation();
   const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
 
   const isPassthrough = GATE_PASSTHROUGH.some((p) => location.pathname.startsWith(p));
+  const isInviteFlow = INVITE_ROUTES.some((p) => location.pathname.startsWith(p));
 
   if (EARLY_ACCESS.enabled && !bypassed && !isPassthrough) {
     return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
@@ -66,8 +87,8 @@ function App() {
 
   return (
     <AuthProvider>
-      <Navbar />
-      {EARLY_ACCESS.enabled && (
+      {isInviteFlow ? <InviteHeader /> : <Navbar />}
+      {EARLY_ACCESS.enabled && !isInviteFlow && !location.pathname.startsWith('/cook/signup') && (
         <button
           onClick={exitBypass}
           className="fixed bottom-20 left-4 z-50 bg-black/70 text-orange-400 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm border border-orange-800/50 hover:bg-orange-900/50 transition-colors"

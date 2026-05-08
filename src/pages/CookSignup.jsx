@@ -20,7 +20,6 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  ArrowRight,
   ArrowLeft,
   ChevronLeft,
   Link as LinkIcon,
@@ -332,15 +331,9 @@ const CookSignup = () => {
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-orange-100">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3 mb-4">
-            <Link
-              to="/"
-              className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center active:scale-90 transition"
-            >
-              <ArrowRight className="w-4 h-4 text-stone-700" strokeWidth={2.4} />
-            </Link>
             <div className="flex-1">
               <h1 className="text-lg font-extrabold text-stone-800 leading-none">
-                التسجيل كطباخة
+                التسجيل كطباخة مؤسِّسة
               </h1>
               <p className="text-[11px] text-stone-500 mt-1">
                 الخطوة {currentStep} من {totalSteps}
@@ -884,18 +877,6 @@ const CookSignup = () => {
               )}
             </div>
 
-            {/* رابط تسجيل الدخول */}
-            {currentStep === 1 && (
-              <div className="text-center mt-2 pt-2 border-t border-stone-100">
-                <Link
-                  to="/login"
-                  className="text-[11px] text-stone-500 hover:text-orange-600 font-semibold active:scale-95 transition inline-flex items-center gap-1"
-                >
-                    لديك حساب بالفعل؟{' '}
-                  <span className="text-orange-600 font-black">تسجيل الدخول</span>
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       </div>

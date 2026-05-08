@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   collection, query, where, getDocs, doc, addDoc, updateDoc,
   serverTimestamp, Timestamp,
@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase/config';
 import { INVITE_SYSTEM, FOUNDING_MEMBERS } from '../config/settings';
 import {
-  KeyRound, ShieldCheck, AlertCircle, Loader2, ArrowRight,
+  KeyRound, ShieldCheck, AlertCircle, Loader2,
   Sparkles, Crown, ChefHat, Check, Clock, UserCheck, Mail, Phone,
 } from 'lucide-react';
 
@@ -402,17 +402,10 @@ const CookInvite = () => {
           </button>
         </div>
 
-        <div className="text-center mt-8 space-y-3">
+        <div className="text-center mt-8">
           <p className="text-[11px] text-stone-600 leading-relaxed">
             ليس لديكِ رمز دعوة؟ تابعي صفحتنا للحصول على دعوة عند الإطلاق الرسمي.
           </p>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-500 hover:text-orange-400 active:scale-95 transition"
-          >
-            <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-            العودة للرئيسية
-          </Link>
         </div>
       </div>
     </div>

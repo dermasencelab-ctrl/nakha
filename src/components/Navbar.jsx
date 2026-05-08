@@ -78,7 +78,7 @@ export default function Navbar() {
   }, [menuOpen]);
 
   // إخفاء الـ navbar في صفحات المصادقة
-  const hideOnRoutes = ['/login', '/cook/signup', '/customer/signup'];
+  const hideOnRoutes = ['/login', '/cook/signup', '/customer/signup', '/cook-invite'];
   if (hideOnRoutes.includes(location.pathname)) {
     return null;
   }
