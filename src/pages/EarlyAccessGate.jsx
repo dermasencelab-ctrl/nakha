@@ -707,9 +707,9 @@ export default function EarlyAccessGate({ onBypass }) {
           className={`ea-headline ea-reveal ${r ? 'on' : ''}`}
           style={{ transitionDelay: '0.25s' }}
         >
-          أكل بيت <em>حقيقي</em>
+          خياركم <em>الأول</em> لتذوق أشهى
           <br />
-          من بشار لبابك
+          المأكولات المنزلية في بشار
         </h1>
 
         <p
