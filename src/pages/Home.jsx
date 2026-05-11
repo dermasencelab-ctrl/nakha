@@ -159,15 +159,15 @@ function Home() {
               {/* Main headline */}
               <h1 className="text-[42px] md:text-5xl lg:text-6xl font-black text-white leading-[1.05] mb-4"
                   style={{ textShadow: '0 4px 32px rgba(0,0,0,0.6)', letterSpacing: '-0.01em' }}>
-                أكل بيت<br />
-                بـ<span
+                خياركم الأول لتذوق<br />
+                <span
                   style={{
                     background: 'linear-gradient(135deg, #FBBF24, #F97316)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
                   }}
-                >نَكهة</span> حقيقية
+                >أشهى المأكولات</span> المنزلية في بشار
               </h1>
 
               <p className="text-sm md:text-base text-white/60 mb-6 leading-relaxed max-w-xs">
