@@ -11,7 +11,6 @@ import {
   Star,
   Package,
   Share2,
-  ExternalLink,
   MapPin,
   Award,
   Sparkles,
@@ -303,18 +302,6 @@ function CookProfile() {
               </div>
             )}
 
-            {/* رابط خارجي */}
-            {cook.socialLink && (
-              <a
-                href={cook.socialLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 mt-3 bg-gradient-to-l from-stone-100 to-stone-50 hover:from-orange-100 hover:to-orange-50 text-stone-700 hover:text-orange-700 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all active:scale-[0.98]"
-              >
-                <ExternalLink className="w-4 h-4" strokeWidth={2.4} />
-                زيارة صفحتها الشخصية
-              </a>
-            )}
           </div>
         </div>
       </div>
