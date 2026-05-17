@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import { DEMO_MODE } from '../config/settings';
 import {
   ArrowLeft, Check, AlertCircle, Loader2,
   ChefHat, ShoppingBag, Truck, Shield, Heart,
   MapPin, Sparkles, Lock, Clock, Award, Users,
-  Mail, Globe,
+  Mail, Globe, Play,
 } from 'lucide-react';
 
 const ADMIN_BYPASS_CODE = 'NAKHA-ADMIN-2026';
@@ -99,6 +100,12 @@ export default function EarlyAccessGate({ onBypass }) {
     } else {
       setBypassError('رمز غير صحيح');
     }
+  };
+
+  const handleDemoEnter = () => {
+    sessionStorage.setItem('nakha_bypass', '1');
+    navigate('/');
+    onBypass();
   };
 
   const scrollToForm = () => {
@@ -516,6 +523,32 @@ export default function EarlyAccessGate({ onBypass }) {
           box-shadow: 0 0 20px rgba(234,88,12,0.10);
         }
         .ea-cook-invite:active { transform: scale(0.98); }
+
+        /* ── Demo entry (only when DEMO_MODE) ── */
+        .ea-demo-enter {
+          display: inline-flex; align-items: center; justify-content: center;
+          gap: 6px;
+          margin: 0.65rem auto 0;
+          padding: 0.5rem 0.9rem;
+          background: rgba(255,245,230,0.025);
+          border: 1px dashed rgba(234,88,12,0.28);
+          border-radius: 999px;
+          font-family: 'Readex Pro', system-ui, sans-serif;
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: rgba(253,186,116,0.85);
+          cursor: pointer;
+          transition: all 0.25s;
+        }
+        .ea-demo-enter:hover {
+          background: rgba(234,88,12,0.06);
+          border-color: rgba(234,88,12,0.5);
+          color: #fdba74;
+        }
+        .ea-demo-enter:active { transform: scale(0.97); }
+        .ea-demo-wrap {
+          display: flex; justify-content: center;
+        }
 
         /* ═══ FOOD SHOWCASE ═══ */
         .ea-food {
@@ -1215,6 +1248,15 @@ export default function EarlyAccessGate({ onBypass }) {
             <ChefHat className="w-4 h-4" strokeWidth={2.2} />
             أنا طباخة — انضمي للمنصة
           </button>
+
+          {DEMO_MODE && (
+            <div className="ea-demo-wrap">
+              <button onClick={handleDemoEnter} className="ea-demo-enter" aria-label="عرض المنصة">
+                <Play className="w-3 h-3" strokeWidth={2.4} />
+                عرض المنصة
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
