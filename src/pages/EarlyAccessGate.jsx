@@ -2,54 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
-import { DEMO_MODE } from '../config/settings';
 import {
   ArrowLeft, Check, AlertCircle, Loader2,
   ChefHat, ShoppingBag, Truck, Shield, Heart,
   MapPin, Sparkles, Lock, Clock, Award, Users,
-  Mail, Globe, Play,
+  Mail, Globe,
 } from 'lucide-react';
 
 const ADMIN_BYPASS_CODE = 'NAKHA-ADMIN-2026';
-
-const FOOD_SHOWCASE = [
-  {
-    emoji: '🥘',
-    name: 'كسكس بالخضر',
-    note: 'وصفة الجدة',
-    gradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f59e0b 100%)',
-  },
-  {
-    emoji: '🍲',
-    name: 'طاجين الحلو',
-    note: 'لحم وبرقوق',
-    gradient: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #ea580c 100%)',
-  },
-  {
-    emoji: '🍜',
-    name: 'الرشتة',
-    note: 'بالدجاج البلدي',
-    gradient: 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #fbbf24 100%)',
-  },
-  {
-    emoji: '🥮',
-    name: 'حلويات منزلية',
-    note: 'مقروط ومخبوزات',
-    gradient: 'linear-gradient(135deg, #831843 0%, #be185d 50%, #f59e0b 100%)',
-  },
-  {
-    emoji: '🫓',
-    name: 'خبز الدار',
-    note: 'مطلوع وخمير',
-    gradient: 'linear-gradient(135deg, #78350f 0%, #b45309 50%, #f59e0b 100%)',
-  },
-  {
-    emoji: '🍵',
-    name: 'شاي بالنعناع',
-    note: 'مع الحلويات',
-    gradient: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #facc15 100%)',
-  },
-];
 
 export default function EarlyAccessGate({ onBypass }) {
   const navigate = useNavigate();
@@ -100,12 +60,6 @@ export default function EarlyAccessGate({ onBypass }) {
     } else {
       setBypassError('رمز غير صحيح');
     }
-  };
-
-  const handleDemoEnter = () => {
-    sessionStorage.setItem('nakha_bypass', '1');
-    navigate('/');
-    onBypass();
   };
 
   const scrollToForm = () => {
@@ -524,36 +478,6 @@ export default function EarlyAccessGate({ onBypass }) {
         }
         .ea-cook-invite:active { transform: scale(0.98); }
 
-        /* ── Demo entry (only when DEMO_MODE) ── */
-        .ea-demo-enter {
-          display: inline-flex; align-items: center; justify-content: center;
-          gap: 6px;
-          margin: 0.65rem auto 0;
-          padding: 0.5rem 0.9rem;
-          background: rgba(255,245,230,0.025);
-          border: 1px dashed rgba(234,88,12,0.28);
-          border-radius: 999px;
-          font-family: 'Readex Pro', system-ui, sans-serif;
-          font-size: 0.7rem;
-          font-weight: 500;
-          color: rgba(253,186,116,0.85);
-          cursor: pointer;
-          transition: all 0.25s;
-        }
-        .ea-demo-enter:hover {
-          background: rgba(234,88,12,0.06);
-          border-color: rgba(234,88,12,0.5);
-          color: #fdba74;
-        }
-        .ea-demo-enter:active { transform: scale(0.97); }
-        .ea-demo-wrap {
-          display: flex; justify-content: center;
-        }
-
-        /* ═══ FOOD SHOWCASE ═══ */
-        .ea-food {
-          padding: 2.25rem 0 1.25rem;
-        }
         .ea-section-eyebrow {
           font-size: 0.62rem;
           font-weight: 700;
@@ -577,94 +501,6 @@ export default function EarlyAccessGate({ onBypass }) {
           text-align: center;
           margin-bottom: 1.4rem;
           line-height: 1.6;
-        }
-        .ea-food-scroll {
-          margin: 0 -1.25rem;
-          padding: 0 1.25rem 0.5rem;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scroll-snap-type: x mandatory;
-          scrollbar-width: none;
-        }
-        .ea-food-scroll::-webkit-scrollbar { display: none; }
-        .ea-food-track {
-          display: flex;
-          gap: 0.7rem;
-          width: max-content;
-        }
-        .ea-food-card {
-          position: relative;
-          width: 168px;
-          height: 220px;
-          flex-shrink: 0;
-          border-radius: 22px;
-          overflow: hidden;
-          scroll-snap-align: start;
-          box-shadow:
-            0 12px 32px -6px rgba(0,0,0,0.55),
-            inset 0 1px 0 rgba(255,255,255,0.08);
-          transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
-        }
-        .ea-food-card:hover { transform: translateY(-4px); }
-        .ea-food-bg {
-          position: absolute; inset: 0;
-        }
-        .ea-food-grain {
-          position: absolute; inset: 0;
-          opacity: 0.15;
-          mix-blend-mode: overlay;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-        .ea-food-glow {
-          position: absolute;
-          top: -30%; left: -30%;
-          width: 160%; height: 160%;
-          background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25), transparent 50%);
-          pointer-events: none;
-        }
-        .ea-food-emoji {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -58%);
-          font-size: 5rem;
-          filter: drop-shadow(0 8px 24px rgba(0,0,0,0.35));
-        }
-        .ea-food-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%);
-        }
-        .ea-food-info {
-          position: absolute;
-          left: 0.85rem; right: 0.85rem; bottom: 0.75rem;
-          text-align: right;
-        }
-        .ea-food-name {
-          font-size: 0.92rem;
-          font-weight: 700;
-          color: #fff;
-          line-height: 1.2;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .ea-food-note {
-          font-size: 0.66rem;
-          font-weight: 500;
-          color: rgba(255,255,255,0.78);
-          margin-top: 2px;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.4);
-        }
-        .ea-food-tag {
-          position: absolute;
-          top: 0.65rem; right: 0.65rem;
-          padding: 4px 8px;
-          background: rgba(0,0,0,0.45);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255,255,255,0.18);
-          border-radius: 999px;
-          font-size: 0.58rem;
-          font-weight: 700;
-          color: #fff;
-          letter-spacing: 0.04em;
         }
 
         /* ═══ TRUST BLOCKS (replacement for waitlist count) ═══ */
@@ -1248,48 +1084,6 @@ export default function EarlyAccessGate({ onBypass }) {
             <ChefHat className="w-4 h-4" strokeWidth={2.2} />
             أنا طباخة — انضمي للمنصة
           </button>
-
-          {DEMO_MODE && (
-            <div className="ea-demo-wrap">
-              <button onClick={handleDemoEnter} className="ea-demo-enter" aria-label="عرض المنصة">
-                <Play className="w-3 h-3" strokeWidth={2.4} />
-                عرض المنصة
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ FOOD SHOWCASE ═══ */}
-      <div className="ea-section">
-        <div
-          className={`ea-food ea-reveal ${r ? 'on' : ''}`}
-          style={{ transitionDelay: '0.7s' }}
-        >
-          <p className="ea-section-eyebrow">من المطبخ البشاري</p>
-          <h2 className="ea-section-title">أطباق تحكي قصة</h2>
-          <p className="ea-section-sub">
-            وصفات منزلية أصيلة من قلب بشار، يتم تحضيرها عند الطلب.
-          </p>
-        </div>
-
-        <div className="ea-food-scroll">
-          <div className="ea-food-track">
-            {FOOD_SHOWCASE.map((food, i) => (
-              <div key={i} className="ea-food-card">
-                <div className="ea-food-bg" style={{ background: food.gradient }} />
-                <div className="ea-food-glow" />
-                <div className="ea-food-grain" />
-                <div className="ea-food-emoji">{food.emoji}</div>
-                <div className="ea-food-overlay" />
-                <div className="ea-food-tag">طازج اليوم</div>
-                <div className="ea-food-info">
-                  <p className="ea-food-name">{food.name}</p>
-                  <p className="ea-food-note">{food.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
