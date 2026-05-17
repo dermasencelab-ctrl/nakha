@@ -2,6 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { mergeCooks, mergeDishes } from '../utils/demoMerge';
 import {
   ChefHat, Star, Search, MapPin, ArrowLeft,
   Heart, Shield, Award, Sparkles, Flame,
@@ -46,11 +47,13 @@ function Home() {
           getDocs(query(collection(db, 'dishes'), where('available', '==', true))),
         ]);
 
-        const allCooks = cooksSnap.docs
+        const realCooks = cooksSnap.docs
           .map((d) => ({ id: d.id, ...d.data() }))
           .filter((c) => c.status === 'approved' || (c.isActive !== false && !c.status));
+        const allCooks = mergeCooks(realCooks);
 
-        const availableDishes = dishesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const realDishes = dishesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const availableDishes = mergeDishes(realDishes);
 
         const cooksWithDishes = allCooks.map((cook) => ({
           ...cook,

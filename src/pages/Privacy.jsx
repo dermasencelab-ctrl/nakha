@@ -134,8 +134,8 @@ const sections = [
         </div>
         <p className="text-xs text-stone-600 mt-3 leading-relaxed">
           للتواصل بشأن حقوقك، راسلنا على{' '}
-          <a href="mailto:contact@nakha.dz" className="font-black text-orange-600 underline">
-            contact@nakha.dz
+          <a href="mailto:contactnaqha@gmail.com" className="font-black text-orange-600 underline">
+            contactnaqha@gmail.com
           </a>
         </p>
       </>
@@ -278,7 +278,7 @@ const Privacy = () => {
               <p className="text-xs text-stone-600 mb-3 leading-relaxed">
                 نحن مستعدون للإجابة على أي استفسار يخص خصوصيتك
               </p>
-              <a href="mailto:contact@nakha.dz"
+              <a href="mailto:contactnaqha@gmail.com"
                  className="inline-flex items-center gap-1.5 bg-white text-orange-600 font-black text-xs px-3 py-2 rounded-xl shadow-sm hover:shadow active:scale-95 transition-all">
                 <Mail className="w-3.5 h-3.5" strokeWidth={2.5} />
                 راسلنا
