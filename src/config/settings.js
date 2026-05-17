@@ -27,12 +27,6 @@ export const LOW_BALANCE_WARNING = 200;
 // 🚫 أقصى رصيد سالب مسموح به (دج)
 export const MAX_NEGATIVE_BALANCE = -200;
 
-// 🎬 وضع العرض التوضيحي (Demo Mode)
-// When true, the app overlays demo chefs/dishes (marked demo: true) on top
-// of real Firestore data — used only for product/TikTok video recording.
-// Set to false to fully hide all demo content.
-export const DEMO_MODE = true;
-
 // 🔐 نظام الوصول المبكر (Early Access)
 export const EARLY_ACCESS = {
   enabled: true,
