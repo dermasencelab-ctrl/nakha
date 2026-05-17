@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { findDemoCook, findDemoDishesByCook, isDemoId } from '../utils/demoMerge';
 import {
   ArrowRight,
   Plus,
@@ -45,6 +46,13 @@ function CookProfile() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (isDemoId(id)) {
+        const demoCook = findDemoCook(id);
+        if (demoCook) setCook(demoCook);
+        setDishes(findDemoDishesByCook(id));
+        setLoading(false);
+        return;
+      }
       const cookDoc = await getDoc(doc(db, 'cooks', id));
       if (cookDoc.exists()) {
         setCook({ id: cookDoc.id, ...cookDoc.data() });

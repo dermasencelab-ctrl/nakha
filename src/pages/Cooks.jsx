@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { mergeCooks, mergeDishes } from '../utils/demoMerge';
 import {
   ArrowRight,
   Star,
@@ -56,14 +57,16 @@ function Cooks() {
     const fetchCooks = async () => {
       try {
         const cooksSnapshot = await getDocs(collection(db, 'cooks'));
-        let cooksData = cooksSnapshot.docs
+        const realCooks = cooksSnapshot.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }))
           .filter((c) => c.status === 'approved' || (c.isActive !== false && !c.status));
+        let cooksData = mergeCooks(realCooks);
 
         const dishesSnapshot = await getDocs(
           query(collection(db, 'dishes'), where('available', '==', true))
         );
-        const availableDishes = dishesSnapshot.docs.map((d) => d.data());
+        const realDishes = dishesSnapshot.docs.map((d) => d.data());
+        const availableDishes = mergeDishes(realDishes);
 
         cooksData = cooksData.map((cook) => {
           const cookDishes = availableDishes.filter((d) => d.cookId === cook.id);
