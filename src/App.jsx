@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Cart from './pages/Cart';
@@ -86,6 +87,7 @@ function App() {
 
   return (
     <>
+      <Analytics />
       {isInviteFlow ? <InviteHeader /> : <Navbar />}
       {EARLY_ACCESS.enabled && !isInviteFlow && !location.pathname.startsWith('/cook/') && (
         <button
