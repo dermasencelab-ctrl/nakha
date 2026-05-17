@@ -1260,7 +1260,7 @@ export default function EarlyAccessGate({ onBypass }) {
         <p className="ea-footer-brand">نَكهة</p>
         <p className="ea-footer-tag">منصة الأكل المنزلي في بشار</p>
         <div className="ea-footer-social">
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <a href="https://www.facebook.com/share/17pPM6i6hQ/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
             <Globe className="w-4 h-4" strokeWidth={2} />
           </a>
           <a href="mailto:contactnaqha@gmail.com" aria-label="Email">
