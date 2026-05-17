@@ -252,7 +252,7 @@ const About = () => {
             <ArrowLeft className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
           </a>
 
-          <a href="mailto:contact@nakha.dz"
+          <a href="mailto:contactnaqha@gmail.com"
              className="flex items-center gap-4 p-4 hover:bg-orange-50 active:bg-orange-100 transition-all group">
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-500/30"
                  style={{ background: 'linear-gradient(135deg, #FB923C, #EA580C)' }}>
@@ -261,7 +261,7 @@ const About = () => {
             <div className="flex-1">
               <p className="text-sm font-extrabold text-stone-800">البريد الإلكتروني</p>
               <p className="text-[11px] text-orange-600 mt-0.5 font-bold" dir="ltr" style={{ textAlign: 'right' }}>
-                contact@nakha.dz
+                contactnaqha@gmail.com
               </p>
             </div>
             <ArrowLeft className="w-4 h-4 text-stone-400 group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />

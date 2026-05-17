@@ -1427,7 +1427,7 @@ export default function EarlyAccessGate({ onBypass }) {
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
             <Globe className="w-4 h-4" strokeWidth={2} />
           </a>
-          <a href="mailto:contact@nakha.app" aria-label="Email">
+          <a href="mailto:contactnaqha@gmail.com" aria-label="Email">
             <Mail className="w-4 h-4" strokeWidth={2} />
           </a>
         </div>
