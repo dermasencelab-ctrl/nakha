@@ -272,6 +272,7 @@ export const AuthProvider = ({ children }) => {
 
   // تسجيل الخروج
   const logout = async () => {
+    localStorage.removeItem('nakha_bypass');
     await signOut(auth);
     setUserProfile(null);
   };

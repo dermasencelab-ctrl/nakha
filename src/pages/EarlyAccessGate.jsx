@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { addDoc, collection, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import { EARLY_ACCESS } from '../config/settings';
 import {
   ArrowLeft, Check, AlertCircle, Loader2,
   ChefHat, ShoppingBag, Truck, Shield, Heart,
   MapPin, Sparkles, Lock, Clock, Award, Users,
-  Mail, Globe,
+  Mail, Globe, KeyRound,
 } from 'lucide-react';
 
 const ADMIN_BYPASS_CODE = 'NAKHA-ADMIN-2026';
@@ -25,6 +26,9 @@ export default function EarlyAccessGate({ onBypass }) {
   const tapCount = useRef(0);
   const tapTimer = useRef(null);
   const formRef = useRef(null);
+
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteError, setInviteError] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setRevealed(true), 80);
@@ -55,7 +59,7 @@ export default function EarlyAccessGate({ onBypass }) {
 
   const handleBypass = () => {
     if (bypassCode.trim() === ADMIN_BYPASS_CODE) {
-      sessionStorage.setItem('nakha_bypass', '1');
+      localStorage.setItem('nakha_bypass', '1');
       onBypass();
     } else {
       setBypassError('رمز غير صحيح');
@@ -65,6 +69,16 @@ export default function EarlyAccessGate({ onBypass }) {
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => formRef.current?.querySelector('input')?.focus(), 600);
+  };
+
+  const handleInviteCode = () => {
+    const code = inviteCode.trim().toUpperCase();
+    if (code === EARLY_ACCESS.partnerCode || code === EARLY_ACCESS.betaCode) {
+      localStorage.setItem('nakha_bypass', '1');
+      onBypass();
+    } else {
+      setInviteError('رمز الدعوة غير صحيح');
+    }
   };
 
   const validatePhone = (p) => /^0[5-7][0-9]{8}$/.test(p);
@@ -478,6 +492,16 @@ export default function EarlyAccessGate({ onBypass }) {
         }
         .ea-cook-invite:active { transform: scale(0.98); }
 
+        /* ── Invite code section ── */
+        .ea-invite-section {
+          position: relative;
+          background: linear-gradient(180deg, rgba(255,245,230,0.035), rgba(255,245,230,0.012));
+          border: 1px solid var(--border-strong);
+          border-radius: 22px;
+          padding: 1.1rem;
+          backdrop-filter: blur(20px);
+        }
+
         .ea-section-eyebrow {
           font-size: 0.62rem;
           font-weight: 700;
@@ -503,7 +527,7 @@ export default function EarlyAccessGate({ onBypass }) {
           line-height: 1.6;
         }
 
-        /* ═══ TRUST BLOCKS (replacement for waitlist count) ═══ */
+        /* ═══ TRUST BLOCKS ═══ */
         .ea-pillars {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -652,7 +676,7 @@ export default function EarlyAccessGate({ onBypass }) {
           font-weight: 400;
         }
 
-        /* ═══ TRUST GRID (why Nakha) ═══ */
+        /* ═══ TRUST GRID ═══ */
         .ea-trust {
           padding: 1.5rem 0;
         }
@@ -1087,7 +1111,48 @@ export default function EarlyAccessGate({ onBypass }) {
         </div>
       </div>
 
-      {/* ═══ TRUST PILLARS (replaces waitlist number) ═══ */}
+      {/* ═══ Invite Code ═══ */}
+      <div className="ea-section">
+        <div
+          className={`ea-reveal ${r ? 'on' : ''}`}
+          style={{ transitionDelay: '0.65s', padding: '1rem 0' }}
+        >
+          <div className="ea-invite-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '0.75rem' }}>
+              <KeyRound className="w-4 h-4" style={{ color: 'var(--accent)' }} strokeWidth={2} />
+              <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-mid)' }}>
+                هل لديك رمز دعوة؟
+              </p>
+            </div>
+            <div className="ea-input-row">
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={(e) => { setInviteCode(e.target.value); setInviteError(''); }}
+                placeholder="أدخل رمز الدعوة"
+                className="ea-input"
+                style={{ letterSpacing: '0.1em' }}
+                onKeyDown={(e) => e.key === 'Enter' && handleInviteCode()}
+              />
+              <button
+                onClick={handleInviteCode}
+                disabled={!inviteCode.trim()}
+                className="ea-submit-btn"
+              >
+                دخول
+              </button>
+            </div>
+            {inviteError && (
+              <div className="ea-error-box">
+                <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={2.4} />
+                <span>{inviteError}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══ TRUST PILLARS ═══ */}
       <div className="ea-section">
         <div
           className={`ea-reveal ${r ? 'on' : ''}`}

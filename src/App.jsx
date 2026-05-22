@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Cart from './pages/Cart';
@@ -68,19 +69,47 @@ function InviteHeader() {
   );
 }
 
-function App() {
+function AppContent() {
   const location = useLocation();
-  const [bypassed, setBypassed] = useState(() => sessionStorage.getItem('nakha_bypass') === '1');
+  const { currentUser, userProfile, loading } = useAuth();
+  const [bypassed, setBypassed] = useState(() => localStorage.getItem('nakha_bypass') === '1');
+
+  useEffect(() => {
+    if (loading) return;
+    if (currentUser && userProfile) {
+      const isAdmin = userProfile.role === 'admin';
+      const isApprovedCook = userProfile.role === 'cook' && userProfile.cookStatus === 'approved';
+      if (isAdmin || isApprovedCook) {
+        localStorage.setItem('nakha_bypass', '1');
+        setBypassed(true);
+      }
+    }
+  }, [loading, currentUser, userProfile]);
 
   const isPassthrough = GATE_PASSTHROUGH.some((p) => location.pathname.startsWith(p));
   const isInviteFlow = INVITE_ROUTES.some((p) => location.pathname.startsWith(p));
+
+  if (EARLY_ACCESS.enabled && loading && !bypassed && !isPassthrough) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0c0906]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl bg-orange-400/30 animate-ping" />
+            <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+              <span className="text-2xl">🍳</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (EARLY_ACCESS.enabled && !bypassed && !isPassthrough) {
     return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
   }
 
   const exitBypass = () => {
-    sessionStorage.removeItem('nakha_bypass');
+    localStorage.removeItem('nakha_bypass');
     setBypassed(false);
   };
 
@@ -272,6 +301,14 @@ function App() {
         />
       </Routes>
     </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
