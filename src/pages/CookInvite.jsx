@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  collection, query, where, getDocs, addDoc,
+  collection, query, where, getDocs, getDoc, doc, addDoc,
   serverTimestamp, Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -76,6 +76,30 @@ const CookInvite = () => {
       const inviteData = inviteDoc.data();
 
       if (inviteData.used) {
+        if (inviteData.used_by) {
+          const cookDoc = await getDoc(doc(db, 'cooks', inviteData.used_by));
+          if (cookDoc.exists()) {
+            const cookStatus = cookDoc.data().status;
+            if (cookStatus === 'approved') {
+              await logInviteEvent('code_reentry_approved', { code: upperCode, cookId: inviteData.used_by });
+              localStorage.setItem('nakha_bypass', '1');
+              navigate('/cook/dashboard');
+              return;
+            }
+            if (cookStatus === 'pending') {
+              await logInviteEvent('code_reentry_pending', { code: upperCode, cookId: inviteData.used_by });
+              setValidationError('حسابك قيد المراجعة. سنُبلغك عند الموافقة.', 'pending');
+              setLoading(false);
+              return;
+            }
+            if (cookStatus === 'rejected') {
+              await logInviteEvent('code_reentry_rejected', { code: upperCode, cookId: inviteData.used_by });
+              setValidationError('تم رفض الحساب المرتبط بهذا الرمز.', 'rejected');
+              setLoading(false);
+              return;
+            }
+          }
+        }
         await logInviteEvent('code_invalid', { code: upperCode, reason: 'already_used' });
         setValidationError('تم استخدام هذا الرمز مسبقاً.', 'used');
         return;
@@ -172,6 +196,8 @@ const CookInvite = () => {
     expired: Clock,
     inactive: ShieldCheck,
     assignment: UserCheck,
+    pending: Clock,
+    rejected: AlertCircle,
     error: AlertCircle,
   };
 

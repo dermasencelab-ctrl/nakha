@@ -30,9 +30,6 @@ export const MAX_NEGATIVE_BALANCE = -200;
 // 🔐 نظام الوصول المبكر (Early Access)
 export const EARLY_ACCESS = {
   enabled: true,
-  partnerCode: 'NAKHA2026',
-  betaCode: 'BETA2026',
-  maxPartnerCooks: 15,
 };
 
 // 🎟️ نظام الدعوات (Invite Codes)

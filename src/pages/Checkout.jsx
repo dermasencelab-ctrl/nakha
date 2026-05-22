@@ -48,13 +48,7 @@ const Checkout = () => {
   const verifyBetaCode = async () => {
     setBetaError('');
     setBetaChecking(true);
-    const code = betaCode.trim().toUpperCase();
-
-    if (code === EARLY_ACCESS.betaCode) {
-      setBetaVerified(true);
-      setBetaChecking(false);
-      return;
-    }
+    const code = betaCode.trim();
 
     try {
       const q = query(collection(db, 'beta_whitelist'), where('phone', '==', code));
