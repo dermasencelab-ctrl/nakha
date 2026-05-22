@@ -50,6 +50,35 @@ const CookInvite = () => {
     setLoading(false);
   };
 
+  const findCookByInviteCode = async (codeStr) => {
+    const cookQuery = query(collection(db, 'cooks'), where('inviteCode', '==', codeStr));
+    const cookSnap = await getDocs(cookQuery);
+    if (!cookSnap.empty) return { id: cookSnap.docs[0].id, ...cookSnap.docs[0].data() };
+    return null;
+  };
+
+  const handleReturningCook = async (cookData, codeStr) => {
+    if (cookData.status === 'approved') {
+      await logInviteEvent('code_reentry_approved', { code: codeStr, cookId: cookData.id || cookData.userId });
+      localStorage.setItem('nakha_bypass', '1');
+      navigate('/cook/dashboard');
+      return true;
+    }
+    if (cookData.status === 'pending') {
+      await logInviteEvent('code_reentry_pending', { code: codeStr, cookId: cookData.id || cookData.userId });
+      setValidationError('حسابك قيد المراجعة. سنُبلغك عند الموافقة.', 'pending');
+      setLoading(false);
+      return true;
+    }
+    if (cookData.status === 'rejected') {
+      await logInviteEvent('code_reentry_rejected', { code: codeStr, cookId: cookData.id || cookData.userId });
+      setValidationError('تم رفض الحساب المرتبط بهذا الرمز.', 'rejected');
+      setLoading(false);
+      return true;
+    }
+    return false;
+  };
+
   const validateCode = async () => {
     if (!code.trim()) return;
     setError('');
@@ -67,6 +96,12 @@ const CookInvite = () => {
       const snap = await getDocs(q);
 
       if (snap.empty) {
+        const cook = await findCookByInviteCode(upperCode)
+                  || await findCookByInviteCode(code.trim());
+        if (cook) {
+          const handled = await handleReturningCook(cook, upperCode);
+          if (handled) return;
+        }
         await logInviteEvent('code_invalid', { code: upperCode, reason: 'not_found' });
         setValidationError('رمز الدعوة غير صحيح. تأكدي من الرمز وأعيدي المحاولة.', 'invalid');
         return;
@@ -79,26 +114,17 @@ const CookInvite = () => {
         if (inviteData.used_by) {
           const cookDoc = await getDoc(doc(db, 'cooks', inviteData.used_by));
           if (cookDoc.exists()) {
-            const cookStatus = cookDoc.data().status;
-            if (cookStatus === 'approved') {
-              await logInviteEvent('code_reentry_approved', { code: upperCode, cookId: inviteData.used_by });
-              localStorage.setItem('nakha_bypass', '1');
-              navigate('/cook/dashboard');
-              return;
-            }
-            if (cookStatus === 'pending') {
-              await logInviteEvent('code_reentry_pending', { code: upperCode, cookId: inviteData.used_by });
-              setValidationError('حسابك قيد المراجعة. سنُبلغك عند الموافقة.', 'pending');
-              setLoading(false);
-              return;
-            }
-            if (cookStatus === 'rejected') {
-              await logInviteEvent('code_reentry_rejected', { code: upperCode, cookId: inviteData.used_by });
-              setValidationError('تم رفض الحساب المرتبط بهذا الرمز.', 'rejected');
-              setLoading(false);
-              return;
-            }
+            const handled = await handleReturningCook(
+              { id: cookDoc.id, ...cookDoc.data() }, upperCode
+            );
+            if (handled) return;
           }
+        }
+        const cook = await findCookByInviteCode(upperCode)
+                  || await findCookByInviteCode(code.trim());
+        if (cook) {
+          const handled = await handleReturningCook(cook, upperCode);
+          if (handled) return;
         }
         await logInviteEvent('code_invalid', { code: upperCode, reason: 'already_used' });
         setValidationError('تم استخدام هذا الرمز مسبقاً.', 'used');
