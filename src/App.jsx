@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -88,6 +88,7 @@ function AppContent() {
 
   const isPassthrough = GATE_PASSTHROUGH.some((p) => location.pathname.startsWith(p));
   const isInviteFlow = INVITE_ROUTES.some((p) => location.pathname.startsWith(p));
+  const handleBypass = useCallback(() => setBypassed(true), []);
 
   if (EARLY_ACCESS.enabled && loading && !bypassed && !isPassthrough) {
     return (
@@ -105,7 +106,7 @@ function AppContent() {
   }
 
   if (EARLY_ACCESS.enabled && !bypassed && !isPassthrough) {
-    return <EarlyAccessGate onBypass={() => setBypassed(true)} />;
+    return <EarlyAccessGate onBypass={handleBypass} />;
   }
 
   const exitBypass = () => {

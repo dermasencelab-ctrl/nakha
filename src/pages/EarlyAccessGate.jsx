@@ -27,6 +27,12 @@ export default function EarlyAccessGate({ onBypass }) {
   const formRef = useRef(null);
 
   useEffect(() => {
+    if (localStorage.getItem('nakha_bypass') === '1') {
+      onBypass();
+    }
+  }, [onBypass]);
+
+  useEffect(() => {
     const t = setTimeout(() => setRevealed(true), 80);
     return () => clearTimeout(t);
   }, []);

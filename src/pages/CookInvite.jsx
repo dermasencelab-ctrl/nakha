@@ -61,7 +61,7 @@ const CookInvite = () => {
     if (cookData.status === 'approved') {
       await logInviteEvent('code_reentry_approved', { code: codeStr, cookId: cookData.id || cookData.userId });
       localStorage.setItem('nakha_bypass', '1');
-      navigate('/cook/dashboard');
+      navigate('/cook/dashboard', { replace: true });
       return true;
     }
     if (cookData.status === 'pending') {
